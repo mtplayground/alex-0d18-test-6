@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { PlayerPlane } from '../entities/PlayerPlane';
 import { AssetKeys, SceneKeys } from '../keys';
+import { PlayerBulletPool } from '../systems/PlayerBulletPool';
+
+const FIRE_INTERVAL_MS = 140;
 
 type MovementKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -10,9 +13,15 @@ type MovementKeys = {
 };
 
 export class GameScene extends Phaser.Scene {
+  private bullets?: PlayerBulletPool;
+
   private bounds?: Phaser.Geom.Rectangle;
 
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+
+  private fireKey?: Phaser.Input.Keyboard.Key;
+
+  private nextShotAt = 0;
 
   private player?: PlayerPlane;
 
@@ -31,6 +40,7 @@ export class GameScene extends Phaser.Scene {
       .setAlpha(0.52);
 
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
+    this.bullets = new PlayerBulletPool(this);
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
 
     const keyboard = this.input.keyboard;
@@ -40,6 +50,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.cursors = keyboard.createCursorKeys();
+    this.fireKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.wasd = {
       up: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
       down: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
@@ -48,8 +59,15 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
-  update(_time: number, delta: number): void {
-    if (!this.bounds || !this.cursors || !this.player || !this.wasd) {
+  update(time: number, delta: number): void {
+    if (
+      !this.bounds ||
+      !this.bullets ||
+      !this.cursors ||
+      !this.fireKey ||
+      !this.player ||
+      !this.wasd
+    ) {
       return;
     }
 
@@ -59,6 +77,27 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.player.move(direction, delta, this.bounds);
+    this.firePlayerBullet(time);
+    this.bullets.update(delta, this.bounds);
+  }
+
+  private firePlayerBullet(time: number): void {
+    if (!this.bullets || !this.fireKey || !this.player) {
+      return;
+    }
+
+    if (!this.fireKey.isDown || time < this.nextShotAt) {
+      return;
+    }
+
+    const fired = this.bullets.fire(
+      this.player.x,
+      this.player.y - this.player.displayHeight / 2,
+    );
+
+    if (fired) {
+      this.nextShotAt = time + FIRE_INTERVAL_MS;
+    }
   }
 
   private isUpDown(): boolean {
