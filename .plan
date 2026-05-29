@@ -1,0 +1,51 @@
+# Architecture Plan
+
+## Scope
+
+This repository will be a Node/TypeScript monorepo for a Phaser 3 scrolling shooter with an Express backend and optional PostgreSQL persistence through Prisma. `PRODUCT.md` is not present in the current checkout, so product naming should continue to come from GitHub issue titles/bodies or a future `PRODUCT.md`.
+
+## Module Structure
+
+- Root
+  - `README.md`: project overview and local development commands.
+  - `.env.example`: documented environment variables, including `DATABASE_URL` when Prisma is added.
+  - `package.json`: workspace scripts for frontend, backend, lint, format, build, and dev orchestration.
+  - `tsconfig.base.json`: shared TypeScript compiler defaults.
+- `frontend/`
+  - Vite + TypeScript application.
+  - `src/main.ts`: Phaser game bootstrap.
+  - `src/game/config.ts`: Phaser configuration and shared dimensions.
+  - `src/game/scenes/`: `BootScene`, `PreloadScene`, `MainMenuScene`, and gameplay scenes.
+  - `src/game/entities/`: player plane, bullets, and future gameplay entities.
+  - `src/game/systems/`: object pools, input handling, HUD state binding, scrolling background helpers.
+  - `src/game/assets/`: generated or checked-in sprite/background/audio assets.
+- `backend/`
+  - Express + TypeScript service.
+  - `src/index.ts`: process bootstrap.
+  - `src/app.ts`: Express app composition, middleware, health route, static serving.
+  - `src/config/`: dotenv and Zod-validated runtime configuration.
+  - `src/routes/`: `/healthz` and future API routes.
+  - `prisma/schema.prisma`: initial Prisma schema and datasource.
+- Shared types
+  - Prefer colocating game-only types in `frontend/src/game/types.ts`.
+  - Add `packages/shared/` only when both frontend and backend need the same runtime contracts; validate API payloads with Zod before sharing them.
+
+## Issue Dependencies
+
+- Issue #1 creates the monorepo skeleton and root project conventions.
+- Issues #2 and #3 can proceed after #1: frontend Phaser scaffold and backend Express scaffold.
+- Issue #4 depends on the backend scaffold from #3 and introduces Prisma/PostgreSQL configuration.
+- Issue #5 depends on both frontend and backend scaffolds from #2 and #3.
+- Issue #6 depends on the frontend scaffold from #2 and establishes scene flow.
+- Issues #7 and #10 depend on the gameplay scene foundation from #6.
+- Issues #8 and #9 depend on the player/gameplay state foundation from #7.
+
+## Key Decisions
+
+- Use npm workspaces unless Issue #1 chooses a different package manager explicitly.
+- Keep frontend and backend independently buildable, with root scripts delegating into each workspace.
+- Express should serve `frontend/dist` only in production/build mode; Vite remains responsible for frontend development.
+- Phaser scenes should be small orchestration units; reusable behavior belongs in entities and systems.
+- Use Phaser object groups or custom pool helpers for bullets to avoid allocation churn.
+- Keep initial Prisma schema minimal and migration-ready; add models only when a later issue requires persisted data.
+- Use generated placeholder assets only where needed to run gameplay; replace them behind stable asset keys later.
