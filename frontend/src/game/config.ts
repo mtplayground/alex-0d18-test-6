@@ -17,6 +17,9 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       gravity: { x: 0, y: 0 },
     },
   },
+  dom: {
+    createContainer: true,
+  },
   scene: [BootScene, PreloadScene, MainMenuScene, GameScene, ResultScene],
   scale: {
     mode: Phaser.Scale.FIT,
