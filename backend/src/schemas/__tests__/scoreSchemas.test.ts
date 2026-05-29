@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { SCORE_SERVICE_LIMITS } from '../../services/scoreService.js';
-import { SubmitScoreRequestSchema } from '../scoreSchemas.js';
+import {
+  ListScoresQuerySchema,
+  SubmitScoreRequestSchema,
+} from '../scoreSchemas.js';
 
 describe('SubmitScoreRequestSchema', () => {
   it('trims nickname and defaults optional level and duration fields', () => {
@@ -88,5 +91,49 @@ describe('SubmitScoreRequestSchema', () => {
     if (!result.success) {
       expect(result.error.issues[0]?.path).toContain(field);
     }
+  });
+});
+
+describe('ListScoresQuerySchema', () => {
+  it.each([
+    {
+      expected: {},
+      query: {},
+    },
+    {
+      expected: {
+        level: undefined,
+      },
+      query: {
+        level: '',
+      },
+    },
+    {
+      expected: {
+        level: 2,
+      },
+      query: {
+        level: '2',
+      },
+    },
+  ])('parses optional level query %#', ({ expected, query }) => {
+    expect(ListScoresQuerySchema.parse(query)).toEqual(expected);
+  });
+
+  it.each([
+    {
+      level: '0',
+    },
+    {
+      level: `${SCORE_SERVICE_LIMITS.totalLevels + 1}`,
+    },
+    {
+      level: 'abc',
+    },
+    {
+      level: '2.5',
+    },
+  ])('rejects invalid level query %#', (query) => {
+    expect(() => ListScoresQuerySchema.parse(query)).toThrow(z.ZodError);
   });
 });
