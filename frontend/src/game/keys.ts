@@ -9,4 +9,5 @@ export const AssetKeys = {
   MenuBackground: 'menu-background',
   MenuEmblem: 'menu-emblem',
   PlayerPlane: 'player-plane',
+  PlayerBullet: 'player-bullet',
 } as const;
