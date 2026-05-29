@@ -11,11 +11,13 @@ export class Hud {
 
   private readonly scoreText: Phaser.GameObjects.Text;
 
+  private readonly shieldText: Phaser.GameObjects.Text;
+
   constructor(scene: Phaser.Scene, state: GameState) {
     const { width } = scene.scale;
 
     const panel = scene.add
-      .rectangle(0, 0, width, 58, 0x020617, 0.58)
+      .rectangle(0, 0, width, 78, 0x020617, 0.58)
       .setOrigin(0, 0);
 
     const healthLabel = scene.add.text(16, 12, 'HP', {
@@ -47,6 +49,13 @@ export class Hud {
       fontStyle: 'bold',
     });
 
+    this.shieldText = scene.add.text(128, 34, '', {
+      color: '#bae6fd',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16px',
+      fontStyle: 'bold',
+    });
+
     for (const item of [
       panel,
       healthLabel,
@@ -54,6 +63,7 @@ export class Hud {
       this.healthFill,
       this.scoreText,
       this.livesText,
+      this.shieldText,
     ]) {
       item.setDepth(100);
       item.setScrollFactor(0);
@@ -81,5 +91,7 @@ export class Hud {
 
     this.scoreText.setText(`SCORE ${state.score.toString().padStart(6, '0')}`);
     this.livesText.setText(`LIVES ${state.lives}`);
+    this.shieldText.setText(`SHIELD ${state.hasShield ? 'ON' : 'OFF'}`);
+    this.shieldText.setColor(state.hasShield ? '#67e8f9' : '#94a3b8');
   }
 }

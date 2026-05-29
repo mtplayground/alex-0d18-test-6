@@ -1,13 +1,21 @@
 import Phaser from 'phaser';
 import { PlayerPlane } from '../entities/PlayerPlane';
 import { SceneKeys } from '../keys';
-import { createInitialGameState } from '../state/GameState';
+import {
+  applyPlayerHit,
+  createInitialGameState,
+  grantPlayerShield,
+  isPlayerInvulnerable,
+} from '../state/GameState';
 import type { GameState } from '../state/GameState';
 import { Hud } from '../systems/Hud';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
 import { ScrollingBackground } from '../systems/ScrollingBackground';
 
 const FIRE_INTERVAL_MS = 140;
+const DEFAULT_PLAYER_DAMAGE = 34;
+const PLAYER_HIT_EVENT = 'player-hit';
+const PLAYER_SHIELD_EVENT = 'player-shield-granted';
 
 type MovementKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -50,6 +58,13 @@ export class GameScene extends Phaser.Scene {
     this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
     this.hud = new Hud(this, this.gameState);
+    this.events.on(PLAYER_HIT_EVENT, this.handlePlayerHit, this);
+    this.events.on(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
+    this.events.once(
+      Phaser.Scenes.Events.SHUTDOWN,
+      this.removeStateEvents,
+      this,
+    );
 
     const keyboard = this.input.keyboard;
 
@@ -89,6 +104,11 @@ export class GameScene extends Phaser.Scene {
 
     this.background.update(delta);
     this.player.move(direction, delta, this.bounds);
+    this.player.updateStatusEffects(
+      time,
+      isPlayerInvulnerable(this.gameState, time),
+      this.gameState.hasShield,
+    );
     this.firePlayerBullet(time);
     this.bullets.update(delta, this.bounds);
     this.hud.update(this.gameState);
@@ -111,6 +131,29 @@ export class GameScene extends Phaser.Scene {
     if (fired) {
       this.nextShotAt = time + FIRE_INTERVAL_MS;
     }
+  }
+
+  private handlePlayerHit(damage = DEFAULT_PLAYER_DAMAGE): void {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    applyPlayerHit(this.gameState, damage, this.time.now);
+    this.hud.update(this.gameState);
+  }
+
+  private handlePlayerShieldGranted(): void {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    grantPlayerShield(this.gameState);
+    this.hud.update(this.gameState);
+  }
+
+  private removeStateEvents(): void {
+    this.events.off(PLAYER_HIT_EVENT, this.handlePlayerHit, this);
+    this.events.off(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
   }
 
   private isUpDown(): boolean {
