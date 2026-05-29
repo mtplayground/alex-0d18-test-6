@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import bossCommandUrl from '../assets/boss-command.svg';
 import enemyBulletUrl from '../assets/enemy-bullet.svg';
 import enemyDiveUrl from '../assets/enemy-dive.svg';
 import enemyStraightUrl from '../assets/enemy-straight.svg';
@@ -37,6 +38,7 @@ export class PreloadScene extends Phaser.Scene {
       fill.destroy();
     });
 
+    this.load.image(AssetKeys.BossCommand, bossCommandUrl);
     this.load.image(AssetKeys.EnemyBullet, enemyBulletUrl);
     this.load.image(AssetKeys.EnemyDive, enemyDiveUrl);
     this.load.image(AssetKeys.EnemyStraight, enemyStraightUrl);

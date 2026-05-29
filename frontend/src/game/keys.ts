@@ -7,6 +7,7 @@ export const SceneKeys = {
 } as const;
 
 export const AssetKeys = {
+  BossCommand: 'boss-command',
   EnemyBullet: 'enemy-bullet',
   EnemyDive: 'enemy-dive',
   EnemyStraight: 'enemy-straight',
