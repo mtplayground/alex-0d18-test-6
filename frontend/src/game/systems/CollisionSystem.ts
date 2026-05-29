@@ -5,6 +5,7 @@ import type { EnemyBullet } from '../entities/EnemyBullet';
 import type { Pickup, PickupType } from '../entities/Pickup';
 import type { PlayerBullet } from '../entities/PlayerBullet';
 import type { PlayerPlane } from '../entities/PlayerPlane';
+import { COLLISION_DAMAGE, canProcessCollisionPair } from './collisionRules';
 
 type CollisionSystemConfig = {
   bossBullets?: Phaser.GameObjects.Group;
@@ -26,10 +27,6 @@ type ArcadeOverlapObject =
   | Phaser.Physics.Arcade.Body
   | Phaser.Physics.Arcade.StaticBody
   | Phaser.Tilemaps.Tile;
-
-const ENEMY_CONTACT_DAMAGE = 34;
-const ENEMY_BULLET_DAMAGE = 28;
-const PLAYER_BULLET_DAMAGE = 1;
 
 export class CollisionSystem {
   private readonly colliders: Phaser.Physics.Arcade.Collider[];
@@ -109,7 +106,7 @@ export class CollisionSystem {
       return;
     }
 
-    if (!bullet.active || !enemy.active) {
+    if (!canProcessCollisionPair(bullet, enemy)) {
       return;
     }
 
@@ -118,7 +115,7 @@ export class CollisionSystem {
 
     bullet.recycle();
 
-    if (enemy.takeDamage(PLAYER_BULLET_DAMAGE)) {
+    if (enemy.takeDamage(COLLISION_DAMAGE.playerBullet)) {
       this.config.onEnemyDestroyed(enemy.scoreValue, dropX, dropY);
     }
   };
@@ -134,12 +131,12 @@ export class CollisionSystem {
       return;
     }
 
-    if (!player.active || !enemy.active) {
+    if (!canProcessCollisionPair(player, enemy)) {
       return;
     }
 
     enemy.recycle();
-    this.config.onPlayerHit(ENEMY_CONTACT_DAMAGE);
+    this.config.onPlayerHit(COLLISION_DAMAGE.enemyContact);
   };
 
   private readonly handlePlayerBulletBoss = (
@@ -153,13 +150,13 @@ export class CollisionSystem {
       return;
     }
 
-    if (!bullet.active || !boss.active) {
+    if (!canProcessCollisionPair(bullet, boss)) {
       return;
     }
 
     bullet.recycle();
 
-    if (boss.takeDamage(PLAYER_BULLET_DAMAGE)) {
+    if (boss.takeDamage(COLLISION_DAMAGE.playerBullet)) {
       this.config.onBossDestroyed?.(boss.scoreValue);
       return;
     }
@@ -178,11 +175,11 @@ export class CollisionSystem {
       return;
     }
 
-    if (!player.active || !boss.active) {
+    if (!canProcessCollisionPair(player, boss)) {
       return;
     }
 
-    this.config.onPlayerHit(ENEMY_CONTACT_DAMAGE);
+    this.config.onPlayerHit(COLLISION_DAMAGE.enemyContact);
   };
 
   private readonly handlePlayerEnemyBullet = (
@@ -196,12 +193,12 @@ export class CollisionSystem {
       return;
     }
 
-    if (!player.active || !bullet.active) {
+    if (!canProcessCollisionPair(player, bullet)) {
       return;
     }
 
     bullet.recycle();
-    this.config.onPlayerHit(ENEMY_BULLET_DAMAGE);
+    this.config.onPlayerHit(COLLISION_DAMAGE.enemyBullet);
   };
 
   private readonly handlePlayerPickup = (
@@ -215,7 +212,7 @@ export class CollisionSystem {
       return;
     }
 
-    if (!player.active || !pickup.active) {
+    if (!canProcessCollisionPair(player, pickup)) {
       return;
     }
 
