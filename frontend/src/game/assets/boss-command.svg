@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="150" viewBox="0 0 180 150">
+  <defs>
+    <linearGradient id="hull" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fef3c7"/>
+      <stop offset="0.45" stop-color="#dc2626"/>
+      <stop offset="1" stop-color="#450a0a"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#7f1d1d"/>
+    </linearGradient>
+  </defs>
+  <path d="M90 10 122 96 90 138 58 96Z" fill="url(#hull)" stroke="#2f0a0a" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M60 62 8 100 62 112Z" fill="url(#wing)" stroke="#2f0a0a" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M120 62 172 100 118 112Z" fill="url(#wing)" stroke="#2f0a0a" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M72 38h36l10 44H62Z" fill="#fee2e2" opacity="0.76"/>
+  <circle cx="90" cy="82" r="15" fill="#111827" stroke="#facc15" stroke-width="4"/>
+  <path d="M76 118 62 146 84 132Z" fill="#facc15" stroke="#854d0e" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M104 118 118 146 96 132Z" fill="#facc15" stroke="#854d0e" stroke-width="3" stroke-linejoin="round"/>
+</svg>

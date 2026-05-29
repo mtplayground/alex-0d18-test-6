@@ -15,6 +15,8 @@ import {
   usePlayerBomb,
 } from '../state/GameState';
 import type { GameState, RunResult } from '../state/GameState';
+import { BossHealthBar } from '../systems/BossHealthBar';
+import { BossManager } from '../systems/BossManager';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import { EnemyManager } from '../systems/EnemyManager';
 import { Hud } from '../systems/Hud';
@@ -46,6 +48,10 @@ export class GameScene extends Phaser.Scene {
   private background?: ScrollingBackground;
 
   private bombKey?: Phaser.Input.Keyboard.Key;
+
+  private bossHealthBar?: BossHealthBar;
+
+  private bosses?: BossManager;
 
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
 
@@ -80,15 +86,22 @@ export class GameScene extends Phaser.Scene {
     this.background = new ScrollingBackground(this, width, height);
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
     this.bullets = new PlayerBulletPool(this);
+    this.bosses = new BossManager(this);
+    this.bosses.spawnBoss(width / 2, -104);
     this.enemies = new EnemyManager(this);
     this.enemies.reset();
     this.waves = new WaveSystem(this.enemies, openingWaveScript);
     this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
     this.hud = new Hud(this, this.gameState);
+    this.bossHealthBar = new BossHealthBar(this);
     this.collisions = new CollisionSystem(this, {
+      bossBullets: this.bosses.getBossBulletGroup(),
+      bosses: this.bosses.getBossGroup(),
       enemies: this.enemies.getGroup(),
       enemyBullets: this.enemies.getEnemyBulletGroup(),
+      onBossDamaged: this.handleBossChanged,
+      onBossDestroyed: this.handleBossDestroyed,
       onEnemyDestroyed: this.handleEnemyDestroyed,
       onPlayerHit: (damage) => {
         this.handlePlayerHit(damage);
@@ -129,6 +142,8 @@ export class GameScene extends Phaser.Scene {
     if (
       !this.bounds ||
       !this.background ||
+      !this.bosses ||
+      !this.bossHealthBar ||
       !this.bullets ||
       !this.bombKey ||
       !this.collisions ||
@@ -161,6 +176,8 @@ export class GameScene extends Phaser.Scene {
     this.bullets.update(delta, this.bounds);
     this.waves.update(delta, this.bounds.width);
     this.enemies.update(time, delta, this.bounds, this.player);
+    this.bosses.update(time, delta, this.bounds, this.player);
+    this.bossHealthBar.update(this.bosses.getStatus());
     this.hud.update(this.gameState);
     this.startResultSceneIfComplete();
   }
@@ -210,6 +227,7 @@ export class GameScene extends Phaser.Scene {
 
   private handleBombDetonated(): void {
     this.enemies?.clearAll();
+    this.bosses?.clearBullets();
   }
 
   private handlePlayerHit(damage = DEFAULT_PLAYER_DAMAGE): void {
@@ -228,6 +246,20 @@ export class GameScene extends Phaser.Scene {
     }
 
     addScore(this.gameState, scoreValue);
+    this.hud.update(this.gameState);
+  };
+
+  private readonly handleBossChanged = (): void => {
+    this.bossHealthBar?.update(this.bosses?.getStatus() ?? null);
+  };
+
+  private readonly handleBossDestroyed = (scoreValue: number): void => {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    addScore(this.gameState, scoreValue);
+    this.bossHealthBar?.hide();
     this.hud.update(this.gameState);
   };
 
