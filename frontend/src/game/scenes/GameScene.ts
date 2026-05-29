@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { PlayerPlane } from '../entities/PlayerPlane';
-import { AssetKeys, SceneKeys } from '../keys';
+import { SceneKeys } from '../keys';
 import { createInitialGameState } from '../state/GameState';
 import type { GameState } from '../state/GameState';
 import { Hud } from '../systems/Hud';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
+import { ScrollingBackground } from '../systems/ScrollingBackground';
 
 const FIRE_INTERVAL_MS = 140;
 
@@ -19,6 +20,8 @@ export class GameScene extends Phaser.Scene {
   private bullets?: PlayerBulletPool;
 
   private bounds?: Phaser.Geom.Rectangle;
+
+  private background?: ScrollingBackground;
 
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
 
@@ -41,11 +44,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    this.add
-      .image(width / 2, height / 2, AssetKeys.MenuBackground)
-      .setDisplaySize(width, height)
-      .setAlpha(0.52);
-
+    this.background = new ScrollingBackground(this, width, height);
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
     this.bullets = new PlayerBulletPool(this);
     this.gameState = createInitialGameState();
@@ -71,6 +70,7 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (
       !this.bounds ||
+      !this.background ||
       !this.bullets ||
       !this.cursors ||
       !this.fireKey ||
@@ -87,6 +87,7 @@ export class GameScene extends Phaser.Scene {
       Number(this.isDownDown()) - Number(this.isUpDown()),
     );
 
+    this.background.update(delta);
     this.player.move(direction, delta, this.bounds);
     this.firePlayerBullet(time);
     this.bullets.update(delta, this.bounds);
