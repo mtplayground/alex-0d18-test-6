@@ -143,6 +143,22 @@ describe('ScoreService', () => {
       },
     },
     {
+      code: 'BLOCKED_NICKNAME',
+      input: {
+        ipAddress: IP_ADDRESS,
+        nickname: 'Admin',
+        score: 100,
+      },
+    },
+    {
+      code: 'BLOCKED_NICKNAME',
+      input: {
+        ipAddress: IP_ADDRESS,
+        nickname: '官 方玩家',
+        score: 100,
+      },
+    },
+    {
       code: 'INVALID_SCORE',
       input: {
         ipAddress: IP_ADDRESS,
@@ -206,6 +222,26 @@ describe('ScoreService', () => {
       }),
     ).rejects.toMatchObject({
       code: 'INVALID_SCORE',
+    });
+    expect(prisma.leaderboardEntry.count).not.toHaveBeenCalled();
+    expect(prisma.leaderboardEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('normalizes punctuation and custom blocked nickname terms', async () => {
+    const prisma = createMockPrisma();
+    const service = new ScoreService(prisma, {
+      blockedNicknameTerms: ['scorekeeper'],
+      now: () => NOW,
+    });
+
+    await expect(
+      service.submitScore({
+        ipAddress: IP_ADDRESS,
+        nickname: 'Score-Keeper',
+        score: 100,
+      }),
+    ).rejects.toMatchObject({
+      code: 'BLOCKED_NICKNAME',
     });
     expect(prisma.leaderboardEntry.count).not.toHaveBeenCalled();
     expect(prisma.leaderboardEntry.create).not.toHaveBeenCalled();
