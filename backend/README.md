@@ -1,5 +1,15 @@
 # Backend
 
-Server workspace.
+Server workspace built with Express, TypeScript, Zod, and dotenv.
 
-Issue #3 will add the Express and TypeScript scaffold. Issue #4 will add PostgreSQL and Prisma integration.
+## Scripts
+
+- `npm run dev --workspace backend`: start the TypeScript development server.
+- `npm run build --workspace backend`: compile TypeScript into `dist/`.
+- `npm run start --workspace backend`: run the compiled server.
+- `npm run lint --workspace backend`: run ESLint.
+- `npm run format --workspace backend`: check Prettier formatting.
+
+## Endpoint
+
+- `GET /healthz`: returns process health metadata.

@@ -5,7 +5,7 @@ This repository is organized as a monorepo with separate frontend and backend wo
 ## Structure
 
 - `frontend/`: browser game client built with Phaser 3, TypeScript, and Vite.
-- `backend/`: API and web server. A later issue will initialize the Express and TypeScript service here.
+- `backend/`: API and web server built with Express, TypeScript, Zod, and dotenv.
 - `.env.example`: documented environment variables for local development and deployment.
 
 ## Development Notes
@@ -20,6 +20,13 @@ This repository is organized as a monorepo with separate frontend and backend wo
 - `npm run build:frontend`: type-check and build the frontend.
 - `npm run lint:frontend`: run ESLint for the frontend workspace.
 - `npm run format:frontend`: check frontend formatting with Prettier.
+
+## Backend Commands
+
+- `npm run dev:backend`: start the Express development server.
+- `npm run build:backend`: compile backend TypeScript.
+- `npm run lint:backend`: run ESLint for the backend workspace.
+- `npm run format:backend`: check backend formatting with Prettier.
 
 ## Planned Issue Order
 
