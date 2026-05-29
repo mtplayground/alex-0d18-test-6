@@ -1,14 +1,26 @@
 export type WeaponLevel = 1 | 2 | 3;
 
+export type RunOutcome = 'game-over' | 'victory';
+
+export type RunResult = {
+  currentLevel: number;
+  outcome: RunOutcome;
+  score: number;
+  totalLevels: number;
+};
+
 export type GameState = {
   bombs: number;
+  currentLevel: number;
   hasShield: boolean;
   health: number;
   invulnerableUntil: number;
   isGameOver: boolean;
   lives: number;
   maxHealth: number;
+  runOutcome: RunOutcome | null;
   score: number;
+  totalLevels: number;
   weaponLevel: WeaponLevel;
 };
 
@@ -22,21 +34,38 @@ export type PlayerHitResult = {
 const DEFAULT_LIVES = 3;
 const DEFAULT_MAX_HEALTH = 100;
 const DEFAULT_BOMBS = 3;
+const DEFAULT_TOTAL_LEVELS = 3;
 const MAX_BOMBS = 9;
 const MAX_WEAPON_LEVEL: WeaponLevel = 3;
 const PLAYER_INVULNERABLE_MS = 1_200;
 
 export const createInitialGameState = (): GameState => ({
   bombs: DEFAULT_BOMBS,
+  currentLevel: 1,
   hasShield: false,
   health: DEFAULT_MAX_HEALTH,
   invulnerableUntil: 0,
   isGameOver: false,
   lives: DEFAULT_LIVES,
   maxHealth: DEFAULT_MAX_HEALTH,
+  runOutcome: null,
   score: 0,
+  totalLevels: DEFAULT_TOTAL_LEVELS,
   weaponLevel: 1,
 });
+
+export const getRunResult = (state: GameState): RunResult | null => {
+  if (!state.runOutcome) {
+    return null;
+  }
+
+  return {
+    currentLevel: state.currentLevel,
+    outcome: state.runOutcome,
+    score: state.score,
+    totalLevels: state.totalLevels,
+  };
+};
 
 export const isPlayerInvulnerable = (
   state: GameState,
@@ -118,6 +147,7 @@ export const applyPlayerHit = (
 
   if (state.lives <= 0) {
     state.isGameOver = true;
+    state.runOutcome = 'game-over';
     return {
       healthChanged: true,
       ignored: false,
@@ -134,4 +164,18 @@ export const applyPlayerHit = (
     lifeLost: true,
     shieldAbsorbed: false,
   };
+};
+
+export const completeCurrentLevel = (state: GameState): RunResult | null => {
+  if (state.runOutcome) {
+    return getRunResult(state);
+  }
+
+  if (state.currentLevel >= state.totalLevels) {
+    state.runOutcome = 'victory';
+    return getRunResult(state);
+  }
+
+  state.currentLevel += 1;
+  return null;
 };
