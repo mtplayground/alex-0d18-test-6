@@ -3,14 +3,16 @@ import { PlayerPlane } from '../entities/PlayerPlane';
 import { SceneKeys } from '../keys';
 import {
   applyPlayerHit,
+  completeCurrentLevel,
   createInitialGameState,
+  getRunResult,
   grantPlayerBomb,
   grantPlayerShield,
   isPlayerInvulnerable,
   upgradePlayerWeapon,
   usePlayerBomb,
 } from '../state/GameState';
-import type { GameState } from '../state/GameState';
+import type { GameState, RunResult } from '../state/GameState';
 import { Hud } from '../systems/Hud';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
 import { ScrollingBackground } from '../systems/ScrollingBackground';
@@ -18,6 +20,7 @@ import { ScrollingBackground } from '../systems/ScrollingBackground';
 const FIRE_INTERVAL_MS = 140;
 const DEFAULT_PLAYER_DAMAGE = 34;
 const BOMB_DETONATED_EVENT = 'screen-bomb-detonated';
+const LEVEL_COMPLETED_EVENT = 'level-completed';
 const PLAYER_BOMB_GRANTED_EVENT = 'player-bomb-granted';
 const PLAYER_HIT_EVENT = 'player-hit';
 const PLAYER_SHIELD_EVENT = 'player-shield-granted';
@@ -51,6 +54,8 @@ export class GameScene extends Phaser.Scene {
 
   private player?: PlayerPlane;
 
+  private resultStarted = false;
+
   private wasd?: MovementKeys;
 
   constructor() {
@@ -60,6 +65,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
+    this.resultStarted = false;
     this.background = new ScrollingBackground(this, width, height);
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
     this.bullets = new PlayerBulletPool(this);
@@ -70,6 +76,7 @@ export class GameScene extends Phaser.Scene {
     this.events.on(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
     this.events.on(PLAYER_WEAPON_UPGRADE_EVENT, this.handleWeaponUpgrade, this);
     this.events.on(PLAYER_BOMB_GRANTED_EVENT, this.handleBombGranted, this);
+    this.events.on(LEVEL_COMPLETED_EVENT, this.handleLevelCompleted, this);
     this.events.once(
       Phaser.Scenes.Events.SHUTDOWN,
       this.removeStateEvents,
@@ -125,6 +132,7 @@ export class GameScene extends Phaser.Scene {
     this.useBomb();
     this.bullets.update(delta, this.bounds);
     this.hud.update(this.gameState);
+    this.startResultSceneIfComplete();
   }
 
   private firePlayerBullet(time: number): void {
@@ -177,6 +185,7 @@ export class GameScene extends Phaser.Scene {
 
     applyPlayerHit(this.gameState, damage, this.time.now);
     this.hud.update(this.gameState);
+    this.startResultSceneIfComplete();
   }
 
   private handlePlayerShieldGranted(): void {
@@ -206,6 +215,20 @@ export class GameScene extends Phaser.Scene {
     this.hud.update(this.gameState);
   }
 
+  private handleLevelCompleted(): void {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    const result = completeCurrentLevel(this.gameState);
+
+    this.hud.update(this.gameState);
+
+    if (result) {
+      this.startResultScene(result);
+    }
+  }
+
   private removeStateEvents(): void {
     this.events.off(PLAYER_HIT_EVENT, this.handlePlayerHit, this);
     this.events.off(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
@@ -215,6 +238,28 @@ export class GameScene extends Phaser.Scene {
       this,
     );
     this.events.off(PLAYER_BOMB_GRANTED_EVENT, this.handleBombGranted, this);
+    this.events.off(LEVEL_COMPLETED_EVENT, this.handleLevelCompleted, this);
+  }
+
+  private startResultSceneIfComplete(): void {
+    if (!this.gameState) {
+      return;
+    }
+
+    const result = getRunResult(this.gameState);
+
+    if (result) {
+      this.startResultScene(result);
+    }
+  }
+
+  private startResultScene(result: RunResult): void {
+    if (this.resultStarted) {
+      return;
+    }
+
+    this.resultStarted = true;
+    this.scene.start(SceneKeys.Result, result);
   }
 
   private isUpDown(): boolean {
