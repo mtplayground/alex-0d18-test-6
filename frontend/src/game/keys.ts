@@ -3,6 +3,7 @@ export const SceneKeys = {
   Preload: 'PreloadScene',
   MainMenu: 'MainMenuScene',
   Game: 'GameScene',
+  Leaderboard: 'LeaderboardScene',
   Result: 'ResultScene',
 } as const;
 

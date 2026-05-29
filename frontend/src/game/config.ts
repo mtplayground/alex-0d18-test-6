@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
+import { LeaderboardScene } from './scenes/LeaderboardScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { ResultScene } from './scenes/ResultScene';
@@ -20,7 +21,14 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   dom: {
     createContainer: true,
   },
-  scene: [BootScene, PreloadScene, MainMenuScene, GameScene, ResultScene],
+  scene: [
+    BootScene,
+    PreloadScene,
+    MainMenuScene,
+    GameScene,
+    ResultScene,
+    LeaderboardScene,
+  ],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
