@@ -5,6 +5,8 @@ const HEALTH_BAR_WIDTH = 148;
 const HEALTH_BAR_HEIGHT = 12;
 
 export class Hud {
+  private readonly bombsText: Phaser.GameObjects.Text;
+
   private readonly healthFill: Phaser.GameObjects.Graphics;
 
   private readonly livesText: Phaser.GameObjects.Text;
@@ -13,11 +15,13 @@ export class Hud {
 
   private readonly shieldText: Phaser.GameObjects.Text;
 
+  private readonly weaponText: Phaser.GameObjects.Text;
+
   constructor(scene: Phaser.Scene, state: GameState) {
     const { width } = scene.scale;
 
     const panel = scene.add
-      .rectangle(0, 0, width, 78, 0x020617, 0.58)
+      .rectangle(0, 0, width, 98, 0x020617, 0.58)
       .setOrigin(0, 0);
 
     const healthLabel = scene.add.text(16, 12, 'HP', {
@@ -56,6 +60,20 @@ export class Hud {
       fontStyle: 'bold',
     });
 
+    this.weaponText = scene.add.text(16, 56, '', {
+      color: '#f8fafc',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16px',
+      fontStyle: 'bold',
+    });
+
+    this.bombsText = scene.add.text(128, 56, '', {
+      color: '#fde68a',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16px',
+      fontStyle: 'bold',
+    });
+
     for (const item of [
       panel,
       healthLabel,
@@ -64,6 +82,8 @@ export class Hud {
       this.scoreText,
       this.livesText,
       this.shieldText,
+      this.weaponText,
+      this.bombsText,
     ]) {
       item.setDepth(100);
       item.setScrollFactor(0);
@@ -93,5 +113,8 @@ export class Hud {
     this.livesText.setText(`LIVES ${state.lives}`);
     this.shieldText.setText(`SHIELD ${state.hasShield ? 'ON' : 'OFF'}`);
     this.shieldText.setColor(state.hasShield ? '#67e8f9' : '#94a3b8');
+    this.weaponText.setText(`WEAPON ${state.weaponLevel}`);
+    this.bombsText.setText(`BOMBS ${state.bombs}`);
+    this.bombsText.setColor(state.bombs > 0 ? '#fde68a' : '#94a3b8');
   }
 }

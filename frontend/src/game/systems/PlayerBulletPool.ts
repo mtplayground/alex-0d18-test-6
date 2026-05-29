@@ -1,7 +1,29 @@
 import Phaser from 'phaser';
 import { PlayerBullet } from '../entities/PlayerBullet';
+import type { WeaponLevel } from '../state/GameState';
 
-const DEFAULT_POOL_SIZE = 32;
+const DEFAULT_POOL_SIZE = 64;
+
+type BulletPatternItem = {
+  horizontalSpeed: number;
+  offsetX: number;
+};
+
+const WEAPON_PATTERNS: Record<WeaponLevel, BulletPatternItem[]> = {
+  1: [{ horizontalSpeed: 0, offsetX: 0 }],
+  2: [
+    { horizontalSpeed: -180, offsetX: -14 },
+    { horizontalSpeed: 0, offsetX: 0 },
+    { horizontalSpeed: 180, offsetX: 14 },
+  ],
+  3: [
+    { horizontalSpeed: -260, offsetX: -24 },
+    { horizontalSpeed: -130, offsetX: -12 },
+    { horizontalSpeed: 0, offsetX: 0 },
+    { horizontalSpeed: 130, offsetX: 12 },
+    { horizontalSpeed: 260, offsetX: 24 },
+  ],
+};
 
 export class PlayerBulletPool {
   private readonly bullets: PlayerBullet[];
@@ -10,14 +32,20 @@ export class PlayerBulletPool {
     this.bullets = Array.from({ length: size }, () => new PlayerBullet(scene));
   }
 
-  fire(x: number, y: number): boolean {
-    const bullet = this.bullets.find((candidate) => !candidate.active);
+  firePattern(x: number, y: number, weaponLevel: WeaponLevel): boolean {
+    const pattern = WEAPON_PATTERNS[weaponLevel];
+    const availableBullets = this.bullets.filter((candidate) => {
+      return !candidate.active;
+    });
 
-    if (!bullet) {
+    if (availableBullets.length < pattern.length) {
       return false;
     }
 
-    bullet.fire(x, y);
+    pattern.forEach((shot, index) => {
+      availableBullets[index].fire(x + shot.offsetX, y, shot.horizontalSpeed);
+    });
+
     return true;
   }
 
