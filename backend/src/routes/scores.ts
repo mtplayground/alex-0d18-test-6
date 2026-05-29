@@ -36,7 +36,7 @@ scoresRouter.get(
         })),
       });
     } catch (error) {
-      handleScoreRouteError(error, response, next);
+      handleScoreRouteError(error, response, next, 'Invalid score request.');
     }
   },
 );
@@ -64,7 +64,7 @@ scoresRouter.post(
         },
       });
     } catch (error) {
-      handleScoreRouteError(error, response, next);
+      handleScoreRouteError(error, response, next, 'Invalid score submission.');
     }
   },
 );
@@ -73,6 +73,7 @@ const handleScoreRouteError = (
   error: unknown,
   response: Response,
   next: NextFunction,
+  validationMessage: string,
 ): void => {
   if (error instanceof z.ZodError) {
     response.status(400).json({
@@ -80,7 +81,7 @@ const handleScoreRouteError = (
         message: issue.message,
         path: issue.path,
       })),
-      error: 'Invalid score request.',
+      error: validationMessage,
     });
     return;
   }
