@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import menuBackgroundUrl from '../assets/menu-background.svg';
 import menuEmblemUrl from '../assets/menu-emblem.svg';
+import playerPlaneUrl from '../assets/player-plane.svg';
 import { AssetKeys, SceneKeys } from '../keys';
 
 export class PreloadScene extends Phaser.Scene {
@@ -32,6 +33,7 @@ export class PreloadScene extends Phaser.Scene {
 
     this.load.image(AssetKeys.MenuBackground, menuBackgroundUrl);
     this.load.image(AssetKeys.MenuEmblem, menuEmblemUrl);
+    this.load.image(AssetKeys.PlayerPlane, playerPlaneUrl);
   }
 
   create(): void {
