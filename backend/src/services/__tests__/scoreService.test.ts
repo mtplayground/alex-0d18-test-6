@@ -16,6 +16,10 @@ type MockScorePrismaClient = {
       Promise<ScoreRecord>,
       Parameters<ScorePrismaClient['leaderboardEntry']['create']>
     >;
+    findMany: jest.Mock<
+      Promise<ScoreRecord[]>,
+      Parameters<ScorePrismaClient['leaderboardEntry']['findMany']>
+    >;
   };
 };
 
@@ -31,6 +35,10 @@ const createMockPrisma = (): MockScorePrismaClient => ({
     create: jest.fn<
       Promise<ScoreRecord>,
       Parameters<ScorePrismaClient['leaderboardEntry']['create']>
+    >(),
+    findMany: jest.fn<
+      Promise<ScoreRecord[]>,
+      Parameters<ScorePrismaClient['leaderboardEntry']['findMany']>
     >(),
   },
 });
@@ -277,5 +285,124 @@ describe('ScoreService', () => {
         score: 100,
       },
     });
+  });
+
+  it('lists the top 50 scores across all levels ranked by returned order', async () => {
+    const prisma = createMockPrisma();
+    const service = createService(prisma);
+    const firstCreatedAt = new Date('2026-05-29T12:00:01.000Z');
+    const secondCreatedAt = new Date('2026-05-29T12:00:02.000Z');
+
+    prisma.leaderboardEntry.findMany.mockResolvedValueOnce([
+      {
+        createdAt: firstCreatedAt,
+        durationMs: 42_000,
+        highestLevel: 3,
+        id: 'score-1',
+        ipAddress: IP_ADDRESS,
+        nickname: 'Ace',
+        score: 2000,
+      },
+      {
+        createdAt: secondCreatedAt,
+        durationMs: 50_000,
+        highestLevel: 2,
+        id: 'score-2',
+        ipAddress: '198.51.100.8',
+        nickname: 'Bee',
+        score: 1500,
+      },
+    ]);
+
+    await expect(service.listTopScores()).resolves.toEqual({
+      entries: [
+        {
+          createdAt: firstCreatedAt,
+          durationMs: 42_000,
+          highestLevel: 3,
+          id: 'score-1',
+          ipAddress: IP_ADDRESS,
+          level: 3,
+          nickname: 'Ace',
+          rank: 1,
+          score: 2000,
+        },
+        {
+          createdAt: secondCreatedAt,
+          durationMs: 50_000,
+          highestLevel: 2,
+          id: 'score-2',
+          ipAddress: '198.51.100.8',
+          level: 2,
+          nickname: 'Bee',
+          rank: 2,
+          score: 1500,
+        },
+      ],
+    });
+    expect(prisma.leaderboardEntry.findMany).toHaveBeenCalledWith({
+      orderBy: [
+        {
+          score: 'desc',
+        },
+        {
+          createdAt: 'asc',
+        },
+      ],
+      take: SCORE_SERVICE_LIMITS.leaderboardLimit,
+    });
+  });
+
+  it('filters the top scores by level when provided', async () => {
+    const prisma = createMockPrisma();
+    const service = createService(prisma);
+    const createdAt = new Date('2026-05-29T12:00:01.000Z');
+
+    prisma.leaderboardEntry.findMany.mockResolvedValueOnce([
+      {
+        createdAt,
+        durationMs: 42_000,
+        highestLevel: 2,
+        id: 'score-1',
+        ipAddress: IP_ADDRESS,
+        nickname: 'Ace',
+        score: 2000,
+      },
+    ]);
+
+    await expect(service.listTopScores({ level: 2.9 })).resolves.toMatchObject({
+      entries: [
+        {
+          level: 2,
+          rank: 1,
+        },
+      ],
+    });
+    expect(prisma.leaderboardEntry.findMany).toHaveBeenCalledWith({
+      orderBy: [
+        {
+          score: 'desc',
+        },
+        {
+          createdAt: 'asc',
+        },
+      ],
+      take: SCORE_SERVICE_LIMITS.leaderboardLimit,
+      where: {
+        highestLevel: 2,
+      },
+    });
+  });
+
+  it('rejects invalid leaderboard level filters before hitting Prisma', async () => {
+    const prisma = createMockPrisma();
+    const service = createService(prisma);
+
+    await expect(
+      service.listTopScores({ level: SCORE_SERVICE_LIMITS.totalLevels + 1 }),
+    ).rejects.toMatchObject({
+      code: 'INVALID_LEVEL',
+    });
+    expect(prisma.leaderboardEntry.findMany).not.toHaveBeenCalled();
   });
 });

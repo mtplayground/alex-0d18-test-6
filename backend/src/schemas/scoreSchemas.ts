@@ -58,3 +58,22 @@ export const SubmitScoreRequestSchema = z
   }));
 
 export type SubmitScoreRequest = z.infer<typeof SubmitScoreRequestSchema>;
+
+export const ListScoresQuerySchema = z.object({
+  level: z.preprocess(
+    (value) => {
+      if (value === undefined || value === '') {
+        return undefined;
+      }
+
+      return Number(value);
+    },
+    IntegerRange(
+      SCORE_SERVICE_LIMITS.minLevel,
+      SCORE_SERVICE_LIMITS.totalLevels,
+      'level',
+    ).optional(),
+  ),
+});
+
+export type ListScoresQuery = z.infer<typeof ListScoresQuerySchema>;

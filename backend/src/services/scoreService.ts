@@ -1,4 +1,5 @@
 export const SCORE_SERVICE_LIMITS = {
+  leaderboardLimit: 50,
   maxDurationMs: 86_400_000,
   maxNicknameLength: 16,
   maxScore: 999_999,
@@ -36,6 +37,10 @@ export type SubmitScoreInput = {
   score: number;
 };
 
+export type ListScoresInput = {
+  level?: number;
+};
+
 export type ScoreRecord = {
   createdAt: Date;
   durationMs: number;
@@ -55,6 +60,10 @@ export type SubmitScoreResult = {
   entry: RankedScore;
 };
 
+export type ListScoresResult = {
+  entries: RankedScore[];
+};
+
 export type ScoreCreateArgs = {
   data: {
     durationMs: number;
@@ -69,9 +78,16 @@ export type ScoreCountArgs = {
   where: Record<string, unknown>;
 };
 
+export type ScoreFindManyArgs = {
+  orderBy: Array<Record<string, unknown>>;
+  take: number;
+  where?: Record<string, unknown>;
+};
+
 export type ScoreModelClient = {
   count(args: ScoreCountArgs): Promise<number>;
   create(args: ScoreCreateArgs): Promise<ScoreRecord>;
+  findMany(args: ScoreFindManyArgs): Promise<ScoreRecord[]>;
 };
 
 export type ScorePrismaClient = {
@@ -144,6 +160,36 @@ export class ScoreService {
     };
   }
 
+  async listTopScores(input: ListScoresInput = {}): Promise<ListScoresResult> {
+    const level = this.normalizeOptionalLevel(input.level);
+    const entries = await this.prisma.leaderboardEntry.findMany({
+      orderBy: [
+        {
+          score: 'desc',
+        },
+        {
+          createdAt: 'asc',
+        },
+      ],
+      take: SCORE_SERVICE_LIMITS.leaderboardLimit,
+      ...(level === undefined
+        ? {}
+        : {
+            where: {
+              highestLevel: level,
+            },
+          }),
+    });
+
+    return {
+      entries: entries.map((entry, index) => ({
+        ...entry,
+        level: entry.highestLevel,
+        rank: index + 1,
+      })),
+    };
+  }
+
   private normalizeInput(input: SubmitScoreInput): NormalizedScoreInput {
     const nickname = input.nickname.trim();
     const score = Math.floor(input.score);
@@ -212,6 +258,29 @@ export class ScoreService {
       nickname,
       score,
     };
+  }
+
+  private normalizeOptionalLevel(
+    level: number | undefined,
+  ): number | undefined {
+    if (level === undefined) {
+      return undefined;
+    }
+
+    const normalizedLevel = Math.floor(level);
+
+    if (
+      !Number.isFinite(level) ||
+      normalizedLevel < SCORE_SERVICE_LIMITS.minLevel ||
+      normalizedLevel > SCORE_SERVICE_LIMITS.totalLevels
+    ) {
+      throw new ScoreServiceError(
+        'INVALID_LEVEL',
+        `Level must be between ${SCORE_SERVICE_LIMITS.minLevel} and ${SCORE_SERVICE_LIMITS.totalLevels}.`,
+      );
+    }
+
+    return normalizedLevel;
   }
 
   private async enforceRateLimit(ipAddress: string): Promise<void> {
