@@ -25,6 +25,9 @@ This repository is organized as a monorepo with separate frontend and backend wo
 
 - `npm run dev:backend`: start the Express development server.
 - `npm run build:backend`: compile backend TypeScript.
+- `npm run db:validate --workspace backend`: validate the Prisma schema.
+- `npm run db:generate --workspace backend`: generate Prisma Client.
+- `npm run db:migrate --workspace backend`: apply committed Prisma migrations.
 - `npm run lint:backend`: run ESLint for the backend workspace.
 - `npm run format:backend`: check backend formatting with Prettier.
 
