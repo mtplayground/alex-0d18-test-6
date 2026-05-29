@@ -14,6 +14,11 @@ This repository is organized as a monorepo with separate frontend and backend wo
 - Web services should bind to `0.0.0.0` and use port `8080` unless a later issue specifies otherwise.
 - Keep generated dependencies and build outputs out of version control.
 
+## App Commands
+
+- `npm run build`: build the frontend and backend.
+- `npm run start`: start the compiled backend, which serves `frontend/dist`.
+
 ## Frontend Commands
 
 - `npm run dev:frontend`: start the Vite development server on `0.0.0.0:8080`.

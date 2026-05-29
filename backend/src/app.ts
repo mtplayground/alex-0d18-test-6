@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import express from 'express';
 import { healthRouter } from './routes/health.js';
+import { mountFrontendStatic } from './static/frontend.js';
 
 const notFoundHandler: RequestHandler = (_request, response) => {
   response.status(404).json({
@@ -27,6 +28,7 @@ export const createApp = (): express.Express => {
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
   app.use('/healthz', healthRouter);
+  mountFrontendStatic(app);
   app.use(notFoundHandler);
   app.use(errorHandler);
 
