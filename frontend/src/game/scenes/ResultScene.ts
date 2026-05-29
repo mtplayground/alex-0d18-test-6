@@ -220,7 +220,10 @@ export class ResultScene extends Phaser.Scene {
     this.setSubmissionStatus('Submitting score...', '#bae6fd');
 
     try {
+      const highestLevel = this.getSubmissionLevel();
       const result = await submitScore({
+        highestLevel,
+        level: highestLevel,
         nickname,
         score: this.result.score,
       });
@@ -288,6 +291,20 @@ export class ResultScene extends Phaser.Scene {
     }
 
     return 'Score submission failed.';
+  }
+
+  private getSubmissionLevel(): number {
+    const rawLevel =
+      this.result.outcome === 'victory'
+        ? this.result.totalLevels
+        : this.result.currentLevel;
+    const maxLevel = Math.max(1, Math.floor(this.result.totalLevels));
+
+    if (!Number.isFinite(rawLevel)) {
+      return 1;
+    }
+
+    return Math.min(maxLevel, Math.max(1, Math.floor(rawLevel)));
   }
 
   private formatScore(): string {
