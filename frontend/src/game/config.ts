@@ -10,6 +10,13 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   width: 480,
   height: 720,
   backgroundColor: '#0b1020',
+  physics: {
+    default: 'arcade',
+    arcade: {
+      debug: false,
+      gravity: { x: 0, y: 0 },
+    },
+  },
   scene: [BootScene, PreloadScene, MainMenuScene, GameScene, ResultScene],
   scale: {
     mode: Phaser.Scale.FIT,

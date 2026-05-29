@@ -42,7 +42,7 @@ const ENEMY_ASSETS: Record<EnemyKind, string> = {
   dive: AssetKeys.EnemyDive,
 };
 
-export abstract class Enemy extends Phaser.GameObjects.Sprite {
+export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly kind: EnemyKind;
 
   readonly scoreValue: number;
@@ -78,9 +78,15 @@ export abstract class Enemy extends Phaser.GameObjects.Sprite {
     this.spawnY = y;
 
     scene.add.existing(this);
+    scene.physics.add.existing(this);
     this.setActive(true);
     this.setDepth(6);
     this.setDisplaySize(54, 54);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    body.setSize(42, 42);
+    body.setOffset(21, 21);
   }
 
   updateEnemy(
@@ -96,6 +102,10 @@ export abstract class Enemy extends Phaser.GameObjects.Sprite {
 
     this.elapsedMs += deltaMs;
     this.updateMovement(deltaMs, bounds, player);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.updateFromGameObject();
+
     this.tryShoot(timeMs, bulletPool, player);
 
     if (this.getTopCenter().y > bounds.bottom + this.displayHeight) {
@@ -122,6 +132,10 @@ export abstract class Enemy extends Phaser.GameObjects.Sprite {
     this.setActive(false);
     this.setVisible(false);
     this.setPosition(-100, -100);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setEnable(false);
+    body.updateFromGameObject();
   }
 
   protected abstract updateMovement(

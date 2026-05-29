@@ -28,8 +28,15 @@ const WEAPON_PATTERNS: Record<WeaponLevel, BulletPatternItem[]> = {
 export class PlayerBulletPool {
   private readonly bullets: PlayerBullet[];
 
+  private readonly group: Phaser.GameObjects.Group;
+
   constructor(scene: Phaser.Scene, size = DEFAULT_POOL_SIZE) {
+    this.group = scene.add.group();
     this.bullets = Array.from({ length: size }, () => new PlayerBullet(scene));
+
+    for (const bullet of this.bullets) {
+      this.group.add(bullet);
+    }
   }
 
   firePattern(x: number, y: number, weaponLevel: WeaponLevel): boolean {
@@ -47,6 +54,10 @@ export class PlayerBulletPool {
     });
 
     return true;
+  }
+
+  getGroup(): Phaser.GameObjects.Group {
+    return this.group;
   }
 
   update(deltaMs: number, bounds: Phaser.Geom.Rectangle): void {

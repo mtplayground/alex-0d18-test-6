@@ -4,15 +4,21 @@ import { AssetKeys } from '../keys';
 const PLAYER_SPEED = 260;
 const INVULNERABLE_FLASH_INTERVAL_MS = 90;
 
-export class PlayerPlane extends Phaser.GameObjects.Sprite {
+export class PlayerPlane extends Phaser.Physics.Arcade.Sprite {
   private readonly shieldRing: Phaser.GameObjects.Graphics;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, AssetKeys.PlayerPlane);
 
     scene.add.existing(this);
+    scene.physics.add.existing(this);
     this.setDisplaySize(64, 64);
     this.setDepth(10);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    body.setSize(44, 46);
+    body.setOffset(26, 24);
 
     this.shieldRing = scene.add.graphics();
     this.shieldRing.setDepth(9);
@@ -45,6 +51,9 @@ export class PlayerPlane extends Phaser.GameObjects.Sprite {
         bounds.bottom - halfHeight,
       ),
     );
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.updateFromGameObject();
   }
 
   updateStatusEffects(

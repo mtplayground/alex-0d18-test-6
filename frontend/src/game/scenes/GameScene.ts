@@ -4,6 +4,7 @@ import { PlayerPlane } from '../entities/PlayerPlane';
 import { SceneKeys } from '../keys';
 import {
   applyPlayerHit,
+  addScore,
   completeCurrentLevel,
   createInitialGameState,
   getRunResult,
@@ -14,6 +15,7 @@ import {
   usePlayerBomb,
 } from '../state/GameState';
 import type { GameState, RunResult } from '../state/GameState';
+import { CollisionSystem } from '../systems/CollisionSystem';
 import { EnemyManager } from '../systems/EnemyManager';
 import { Hud } from '../systems/Hud';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
@@ -46,6 +48,8 @@ export class GameScene extends Phaser.Scene {
   private bombKey?: Phaser.Input.Keyboard.Key;
 
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+
+  private collisions?: CollisionSystem;
 
   private enemies?: EnemyManager;
 
@@ -82,6 +86,16 @@ export class GameScene extends Phaser.Scene {
     this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
     this.hud = new Hud(this, this.gameState);
+    this.collisions = new CollisionSystem(this, {
+      enemies: this.enemies.getGroup(),
+      enemyBullets: this.enemies.getEnemyBulletGroup(),
+      onEnemyDestroyed: this.handleEnemyDestroyed,
+      onPlayerHit: (damage) => {
+        this.handlePlayerHit(damage);
+      },
+      player: this.player,
+      playerBullets: this.bullets.getGroup(),
+    });
     this.events.on(PLAYER_HIT_EVENT, this.handlePlayerHit, this);
     this.events.on(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
     this.events.on(PLAYER_WEAPON_UPGRADE_EVENT, this.handleWeaponUpgrade, this);
@@ -117,6 +131,7 @@ export class GameScene extends Phaser.Scene {
       !this.background ||
       !this.bullets ||
       !this.bombKey ||
+      !this.collisions ||
       !this.cursors ||
       !this.enemies ||
       !this.fireKey ||
@@ -207,6 +222,15 @@ export class GameScene extends Phaser.Scene {
     this.startResultSceneIfComplete();
   }
 
+  private readonly handleEnemyDestroyed = (scoreValue: number): void => {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    addScore(this.gameState, scoreValue);
+    this.hud.update(this.gameState);
+  };
+
   private handlePlayerShieldGranted(): void {
     if (!this.gameState || !this.hud) {
       return;
@@ -249,6 +273,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private removeStateEvents(): void {
+    this.collisions?.destroy();
+    this.collisions = undefined;
     this.events.off(PLAYER_HIT_EVENT, this.handlePlayerHit, this);
     this.events.off(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
     this.events.off(
