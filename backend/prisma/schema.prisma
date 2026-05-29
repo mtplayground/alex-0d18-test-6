@@ -6,3 +6,17 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model LeaderboardEntry {
+  id           String   @id @default(cuid())
+  nickname     String   @db.VarChar(16)
+  score        Int
+  highestLevel Int
+  durationMs   Int
+  ipAddress    String   @db.VarChar(45)
+  createdAt    DateTime @default(now())
+
+  @@index([score(sort: Desc), createdAt(sort: Asc)])
+  @@index([highestLevel, score(sort: Desc), createdAt(sort: Asc)])
+  @@index([ipAddress, createdAt])
+}
