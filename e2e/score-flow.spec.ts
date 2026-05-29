@@ -9,6 +9,8 @@ type ScoreEntry = {
 };
 
 type ScoreSubmission = {
+  highestLevel?: unknown;
+  level?: unknown;
   nickname?: unknown;
   score?: unknown;
 };
@@ -74,6 +76,12 @@ test("main menu to score submission to leaderboard visibility", async ({
       message: "score submission should reach the scores API",
     })
     .toBe(1);
+  expect(entries[0]).toMatchObject({
+    level: 3,
+    nickname: TEST_NICKNAME,
+    score: TEST_SCORE,
+  });
+  await expectSceneText(page, "ResultScene", "Rank #1");
 
   await clickGamePoint(page, 0.5, 0.92);
   await waitForScene(page, "MainMenuScene");
@@ -100,9 +108,17 @@ const handleScoresRoute = async (
         : TEST_NICKNAME;
     const score =
       typeof submission.score === "number" ? Math.floor(submission.score) : 0;
+    const submittedLevel =
+      typeof submission.highestLevel === "number"
+        ? submission.highestLevel
+        : submission.level;
+    const level =
+      typeof submittedLevel === "number" && Number.isFinite(submittedLevel)
+        ? Math.floor(submittedLevel)
+        : 1;
     const entry: ScoreEntry = {
       createdAt: new Date().toISOString(),
-      level: 3,
+      level,
       nickname,
       rank: 1,
       score,
@@ -170,11 +186,25 @@ const expectLeaderboardText = async (
   page: Page,
   expectedText: string,
 ): Promise<void> => {
-  await page.waitForFunction((text) => {
-    const scene = window.__alexE2EGame?.scene.getScene("LeaderboardScene");
+  await expectSceneText(page, "LeaderboardScene", expectedText);
+};
 
-    return scene?.children.list.some((child) => {
-      return typeof child.text === "string" && child.text.includes(text);
-    });
-  }, expectedText);
+const expectSceneText = async (
+  page: Page,
+  sceneKey: string,
+  expectedText: string,
+): Promise<void> => {
+  await page.waitForFunction(
+    (text) => {
+      const scene = window.__alexE2EGame?.scene.getScene(text.sceneKey);
+
+      return scene?.children.list.some((child) => {
+        return (
+          typeof child.text === "string" &&
+          child.text.includes(text.expectedText)
+        );
+      });
+    },
+    { expectedText, sceneKey },
+  );
 };
