@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { PlayerPlane } from '../entities/PlayerPlane';
 import { AssetKeys, SceneKeys } from '../keys';
+import { createInitialGameState } from '../state/GameState';
+import type { GameState } from '../state/GameState';
+import { Hud } from '../systems/Hud';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
 
 const FIRE_INTERVAL_MS = 140;
@@ -20,6 +23,10 @@ export class GameScene extends Phaser.Scene {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
 
   private fireKey?: Phaser.Input.Keyboard.Key;
+
+  private gameState?: GameState;
+
+  private hud?: Hud;
 
   private nextShotAt = 0;
 
@@ -41,7 +48,9 @@ export class GameScene extends Phaser.Scene {
 
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
     this.bullets = new PlayerBulletPool(this);
+    this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
+    this.hud = new Hud(this, this.gameState);
 
     const keyboard = this.input.keyboard;
 
@@ -65,6 +74,8 @@ export class GameScene extends Phaser.Scene {
       !this.bullets ||
       !this.cursors ||
       !this.fireKey ||
+      !this.gameState ||
+      !this.hud ||
       !this.player ||
       !this.wasd
     ) {
@@ -79,6 +90,7 @@ export class GameScene extends Phaser.Scene {
     this.player.move(direction, delta, this.bounds);
     this.firePlayerBullet(time);
     this.bullets.update(delta, this.bounds);
+    this.hud.update(this.gameState);
   }
 
   private firePlayerBullet(time: number): void {
