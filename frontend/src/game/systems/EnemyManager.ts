@@ -14,8 +14,11 @@ export class EnemyManager {
 
   private readonly enemies: Enemy[] = [];
 
+  private readonly group: Phaser.GameObjects.Group;
+
   constructor(private readonly scene: Phaser.Scene) {
     this.bulletPool = new EnemyBulletPool(scene);
+    this.group = scene.add.group();
   }
 
   reset(): void {
@@ -24,11 +27,14 @@ export class EnemyManager {
     }
 
     this.enemies.length = 0;
+    this.group.clear(false, false);
     this.bulletPool.recycleAll();
   }
 
   spawnEnemy(kind: EnemyKind, x: number, y: number): void {
-    this.enemies.push(this.createEnemy(kind, x, y));
+    const enemy = this.createEnemy(kind, x, y);
+    this.enemies.push(enemy);
+    this.group.add(enemy);
   }
 
   clearAll(): void {
@@ -37,6 +43,14 @@ export class EnemyManager {
     }
 
     this.bulletPool.recycleAll();
+  }
+
+  getEnemyBulletGroup(): Phaser.GameObjects.Group {
+    return this.bulletPool.getGroup();
+  }
+
+  getGroup(): Phaser.GameObjects.Group {
+    return this.group;
   }
 
   update(
@@ -70,6 +84,7 @@ export class EnemyManager {
         continue;
       }
 
+      this.group.remove(this.enemies[index], false, false);
       this.enemies[index].destroy();
       this.enemies.splice(index, 1);
     }

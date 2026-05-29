@@ -106,6 +106,14 @@ export const usePlayerBomb = (state: GameState): boolean => {
   return true;
 };
 
+export const addScore = (state: GameState, amount: number): void => {
+  if (state.isGameOver || amount <= 0) {
+    return;
+  }
+
+  state.score += Math.floor(amount);
+};
+
 export const applyPlayerHit = (
   state: GameState,
   damage: number,

@@ -1,17 +1,23 @@
 import Phaser from 'phaser';
 import { AssetKeys } from '../keys';
 
-export class EnemyBullet extends Phaser.GameObjects.Sprite {
+export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
   private velocity = new Phaser.Math.Vector2(0, 0);
 
   constructor(scene: Phaser.Scene) {
     super(scene, -100, -100, AssetKeys.EnemyBullet);
 
     scene.add.existing(this);
+    scene.physics.add.existing(this);
     this.setActive(false);
     this.setDepth(7);
     this.setDisplaySize(14, 24);
     this.setVisible(false);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    body.setEnable(false);
+    body.setSize(12, 20);
   }
 
   fire(x: number, y: number, velocity: Phaser.Math.Vector2): void {
@@ -23,6 +29,10 @@ export class EnemyBullet extends Phaser.GameObjects.Sprite {
     );
     this.setActive(true);
     this.setVisible(true);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setEnable(true);
+    body.updateFromGameObject();
   }
 
   recycle(): void {
@@ -31,6 +41,10 @@ export class EnemyBullet extends Phaser.GameObjects.Sprite {
     this.setActive(false);
     this.setVisible(false);
     this.setPosition(-100, -100);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setEnable(false);
+    body.updateFromGameObject();
   }
 
   update(deltaMs: number, bounds: Phaser.Geom.Rectangle): void {
@@ -41,6 +55,9 @@ export class EnemyBullet extends Phaser.GameObjects.Sprite {
     const deltaSeconds = deltaMs / 1000;
     this.x += this.velocity.x * deltaSeconds;
     this.y += this.velocity.y * deltaSeconds;
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.updateFromGameObject();
 
     if (
       this.getTopCenter().y > bounds.bottom ||
