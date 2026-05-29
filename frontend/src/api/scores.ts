@@ -1,29 +1,62 @@
 export type ScoreSubmission = {
+  durationMs?: number;
+  highestLevel?: number;
+  level?: number;
   nickname: string;
+  score: number;
+};
+
+export type SubmittedScoreEntry = {
+  createdAt: string | null;
+  durationMs: number | null;
+  highestLevel: number | null;
+  id: string | null;
+  level: number | null;
+  nickname: string;
+  rank: number;
   score: number;
 };
 
 export type SubmitScoreResult = {
+  entry: SubmittedScoreEntry | null;
   rank: number | null;
 };
 
 export type LeaderboardEntry = {
-  rank: number;
-  nickname: string;
-  score: number;
-  level: number | null;
   createdAt: string | null;
+  durationMs: number | null;
+  highestLevel: number | null;
+  id: string | null;
+  level: number | null;
+  nickname: string;
+  rank: number;
+  score: number;
 };
 
 export type GetLeaderboardOptions = {
-  level: number;
+  level?: number;
   limit?: number;
 };
 
+export type ApiErrorDetail = {
+  message: string;
+  path: Array<number | string>;
+};
+
+export class ApiClientError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number | null = null,
+    public readonly code: string | null = null,
+    public readonly details: ApiErrorDetail[] = [],
+  ) {
+    super(message);
+    this.name = 'ApiClientError';
+  }
+}
+
 type ScoreSubmissionResponse = {
-  entry?: {
-    rank?: unknown;
-  };
+  entry?: unknown;
   rank?: unknown;
   ranking?: unknown;
 };
@@ -39,41 +72,42 @@ const DEFAULT_LEADERBOARD_LIMIT = 50;
 export const submitScore = async (
   submission: ScoreSubmission,
 ): Promise<SubmitScoreResult> => {
-  const response = await fetch(SCORES_ENDPOINT, {
+  const payload = await requestJson<ScoreSubmissionResponse>(SCORES_ENDPOINT, {
     body: JSON.stringify(submission),
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
   });
-
-  if (!response.ok) {
-    throw new Error(await getErrorMessage(response));
-  }
-
-  const payload = (await response.json()) as ScoreSubmissionResponse;
+  const entry = normalizeSubmittedScoreEntry(payload.entry);
 
   return {
-    rank: getRank(payload),
+    entry,
+    rank: entry?.rank ?? getRank(payload),
   };
 };
 
-export const getLeaderboard = async ({
-  level,
-  limit = DEFAULT_LEADERBOARD_LIMIT,
-}: GetLeaderboardOptions): Promise<LeaderboardEntry[]> => {
-  const searchParams = new URLSearchParams({
-    level: Math.max(1, Math.floor(level)).toString(),
-    limit: Math.max(1, Math.floor(limit)).toString(),
-  });
+export const getLeaderboard = async (
+  options: GetLeaderboardOptions = {},
+): Promise<LeaderboardEntry[]> => {
+  const limit = normalizePositiveInteger(
+    options.limit,
+    DEFAULT_LEADERBOARD_LIMIT,
+  );
+  const searchParams = new URLSearchParams();
 
-  const response = await fetch(`${SCORES_ENDPOINT}?${searchParams.toString()}`);
-
-  if (!response.ok) {
-    throw new Error(await getErrorMessage(response));
+  if (options.level !== undefined) {
+    searchParams.set(
+      'level',
+      Math.max(1, Math.floor(options.level)).toString(),
+    );
   }
 
-  const payload = (await response.json()) as LeaderboardResponse | unknown[];
+  const endpoint = searchParams.size
+    ? `${SCORES_ENDPOINT}?${searchParams.toString()}`
+    : SCORES_ENDPOINT;
+  const payload = await requestJson<LeaderboardResponse | unknown[]>(endpoint);
+
   const rawEntries = Array.isArray(payload)
     ? payload
     : Array.isArray(payload.entries)
@@ -88,28 +122,65 @@ export const getLeaderboard = async ({
     .filter((entry): entry is LeaderboardEntry => Boolean(entry));
 };
 
-const getErrorMessage = async (response: Response): Promise<string> => {
-  try {
-    const payload = (await response.json()) as { error?: unknown };
+const requestJson = async <Payload>(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Payload> => {
+  let response: Response;
 
-    if (typeof payload.error === 'string' && payload.error.trim()) {
-      return payload.error;
-    }
+  try {
+    response =
+      init === undefined ? await fetch(input) : await fetch(input, init);
   } catch {
-    // Fall back to a generic message below when the server returns no JSON body.
+    throw new ApiClientError('Unable to reach the score service.');
   }
 
-  return 'Score submission failed.';
+  if (!response.ok) {
+    throw await createApiError(response);
+  }
+
+  try {
+    return (await response.json()) as Payload;
+  } catch {
+    throw new ApiClientError(
+      'Score service returned an invalid response.',
+      response.status,
+    );
+  }
 };
 
 const getRank = (payload: ScoreSubmissionResponse): number | null => {
-  const rawRank = payload.entry?.rank ?? payload.rank ?? payload.ranking;
+  const entry = getRecord(payload.entry);
+  const rawRank = entry?.rank ?? payload.rank ?? payload.ranking;
 
   if (typeof rawRank !== 'number' || !Number.isFinite(rawRank)) {
     return null;
   }
 
   return Math.max(1, Math.floor(rawRank));
+};
+
+const getRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+};
+
+const normalizeSubmittedScoreEntry = (
+  value: unknown,
+): SubmittedScoreEntry | null => {
+  const entry = normalizeLeaderboardEntry(value, 0);
+
+  if (!entry) {
+    return null;
+  }
+
+  return {
+    ...entry,
+    rank: entry.rank,
+  };
 };
 
 const normalizeLeaderboardEntry = (
@@ -129,13 +200,89 @@ const normalizeLeaderboardEntry = (
 
   return {
     createdAt: getString(record.createdAt),
-    level: getNumber(record.level ?? record.currentLevel),
+    durationMs: getNumber(record.durationMs),
+    highestLevel: getNumber(record.highestLevel),
+    id: getString(record.id),
+    level: getNumber(
+      record.level ?? record.highestLevel ?? record.currentLevel,
+    ),
     nickname:
       getString(record.nickname ?? record.name ?? record.playerName) ??
       'UNKNOWN',
     rank: getNumber(record.rank ?? record.ranking) ?? index + 1,
     score,
   };
+};
+
+const createApiError = async (response: Response): Promise<ApiClientError> => {
+  const payload = await readJsonObject(response);
+  const message =
+    getString(payload?.error) ??
+    getString(payload?.message) ??
+    `Score service request failed with status ${response.status}.`;
+  const code = getString(payload?.code);
+  const details = normalizeApiErrorDetails(payload?.details);
+
+  return new ApiClientError(message, response.status, code, details);
+};
+
+const readJsonObject = async (
+  response: Response,
+): Promise<Record<string, unknown> | null> => {
+  try {
+    const payload = (await response.json()) as unknown;
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return null;
+    }
+
+    return payload as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeApiErrorDetails = (value: unknown): ApiErrorDetail[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((detail) => {
+      if (!detail || typeof detail !== 'object') {
+        return null;
+      }
+
+      const record = detail as Record<string, unknown>;
+      const message = getString(record.message);
+      const path = Array.isArray(record.path)
+        ? record.path.filter(
+            (part): part is number | string =>
+              typeof part === 'number' || typeof part === 'string',
+          )
+        : [];
+
+      if (!message) {
+        return null;
+      }
+
+      return {
+        message,
+        path,
+      };
+    })
+    .filter((detail): detail is ApiErrorDetail => Boolean(detail));
+};
+
+const normalizePositiveInteger = (
+  value: number | undefined,
+  fallback: number,
+): number => {
+  if (value === undefined || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.floor(value));
 };
 
 const getNumber = (value: unknown): number | null => {
