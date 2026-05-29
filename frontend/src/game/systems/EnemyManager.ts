@@ -9,43 +9,26 @@ import {
 import type { PlayerPlane } from '../entities/PlayerPlane';
 import { EnemyBulletPool } from './EnemyBulletPool';
 
-type SpawnPoint = {
-  kind: EnemyKind;
-  xRatio: number;
-  y: number;
-};
-
-const OPENING_SPAWNS: SpawnPoint[] = [
-  { kind: 'straight', xRatio: 0.23, y: -48 },
-  { kind: 'zigzag', xRatio: 0.5, y: -124 },
-  { kind: 'dive', xRatio: 0.77, y: -204 },
-];
-
-const RESPAWN_DELAY_MS = 1_100;
-
 export class EnemyManager {
   private readonly bulletPool: EnemyBulletPool;
 
   private readonly enemies: Enemy[] = [];
 
-  private nextRespawnAt = 0;
-
   constructor(private readonly scene: Phaser.Scene) {
     this.bulletPool = new EnemyBulletPool(scene);
   }
 
-  spawnOpeningEnemies(width: number): void {
+  reset(): void {
     for (const enemy of this.enemies) {
       enemy.destroy();
     }
 
     this.enemies.length = 0;
+    this.bulletPool.recycleAll();
+  }
 
-    for (const spawn of OPENING_SPAWNS) {
-      this.enemies.push(
-        this.createEnemy(spawn.kind, width * spawn.xRatio, spawn.y),
-      );
-    }
+  spawnEnemy(kind: EnemyKind, x: number, y: number): void {
+    this.enemies.push(this.createEnemy(kind, x, y));
   }
 
   clearAll(): void {
@@ -67,21 +50,7 @@ export class EnemyManager {
     }
 
     this.bulletPool.update(deltaMs, bounds);
-    this.respawnIfCleared(timeMs, bounds.width);
-  }
-
-  private respawnIfCleared(timeMs: number, width: number): void {
-    if (this.enemies.some((enemy) => enemy.active)) {
-      this.nextRespawnAt = timeMs + RESPAWN_DELAY_MS;
-      return;
-    }
-
-    if (timeMs < this.nextRespawnAt) {
-      return;
-    }
-
-    this.spawnOpeningEnemies(width);
-    this.nextRespawnAt = timeMs + RESPAWN_DELAY_MS;
+    this.removeInactiveEnemies();
   }
 
   private createEnemy(kind: EnemyKind, x: number, y: number): Enemy {
@@ -92,6 +61,17 @@ export class EnemyManager {
         return new ZigZagEnemy(this.scene, x, y);
       case 'dive':
         return new DiveEnemy(this.scene, x, y);
+    }
+  }
+
+  private removeInactiveEnemies(): void {
+    for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
+      if (this.enemies[index].active) {
+        continue;
+      }
+
+      this.enemies[index].destroy();
+      this.enemies.splice(index, 1);
     }
   }
 }

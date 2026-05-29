@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { openingWaveScript } from '../data/waves';
 import { PlayerPlane } from '../entities/PlayerPlane';
 import { SceneKeys } from '../keys';
 import {
@@ -17,6 +18,7 @@ import { EnemyManager } from '../systems/EnemyManager';
 import { Hud } from '../systems/Hud';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
 import { ScrollingBackground } from '../systems/ScrollingBackground';
+import { WaveSystem } from '../systems/WaveSystem';
 
 const FIRE_INTERVAL_MS = 140;
 const DEFAULT_PLAYER_DAMAGE = 34;
@@ -61,6 +63,8 @@ export class GameScene extends Phaser.Scene {
 
   private wasd?: MovementKeys;
 
+  private waves?: WaveSystem;
+
   constructor() {
     super(SceneKeys.Game);
   }
@@ -73,7 +77,8 @@ export class GameScene extends Phaser.Scene {
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
     this.bullets = new PlayerBulletPool(this);
     this.enemies = new EnemyManager(this);
-    this.enemies.spawnOpeningEnemies(width);
+    this.enemies.reset();
+    this.waves = new WaveSystem(this.enemies, openingWaveScript);
     this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
     this.hud = new Hud(this, this.gameState);
@@ -118,7 +123,8 @@ export class GameScene extends Phaser.Scene {
       !this.gameState ||
       !this.hud ||
       !this.player ||
-      !this.wasd
+      !this.wasd ||
+      !this.waves
     ) {
       return;
     }
@@ -138,6 +144,7 @@ export class GameScene extends Phaser.Scene {
     this.firePlayerBullet(time);
     this.useBomb();
     this.bullets.update(delta, this.bounds);
+    this.waves.update(delta, this.bounds.width);
     this.enemies.update(time, delta, this.bounds, this.player);
     this.hud.update(this.gameState);
     this.startResultSceneIfComplete();
