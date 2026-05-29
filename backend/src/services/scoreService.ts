@@ -10,7 +10,20 @@ export const SCORE_SERVICE_LIMITS = {
   totalLevels: 3,
 } as const;
 
+const DEFAULT_BLOCKED_NICKNAME_TERMS = [
+  'admin',
+  'administrator',
+  'gm',
+  'moderator',
+  'official',
+  'system',
+  '客服',
+  '官方',
+  '管理员',
+] as const;
+
 export type ScoreServiceErrorCode =
+  | 'BLOCKED_NICKNAME'
   | 'INVALID_DURATION'
   | 'INVALID_LEVEL'
   | 'INVALID_NICKNAME'
@@ -95,6 +108,7 @@ export type ScorePrismaClient = {
 };
 
 export type ScoreServiceOptions = {
+  blockedNicknameTerms?: readonly string[];
   now?: () => Date;
   rateLimitWindowMs?: number;
   submissionLimit?: number;
@@ -109,6 +123,7 @@ type NormalizedScoreInput = {
 };
 
 export class ScoreService {
+  private readonly blockedNicknameTerms: string[];
   private readonly now: () => Date;
   private readonly rateLimitWindowMs: number;
   private readonly submissionLimit: number;
@@ -117,6 +132,9 @@ export class ScoreService {
     private readonly prisma: ScorePrismaClient,
     options: ScoreServiceOptions = {},
   ) {
+    this.blockedNicknameTerms = this.normalizeBlockedNicknameTerms(
+      options.blockedNicknameTerms ?? DEFAULT_BLOCKED_NICKNAME_TERMS,
+    );
     this.now = options.now ?? (() => new Date());
     this.rateLimitWindowMs =
       options.rateLimitWindowMs ?? SCORE_SERVICE_LIMITS.rateLimitWindowMs;
@@ -209,6 +227,13 @@ export class ScoreService {
       );
     }
 
+    if (this.isBlockedNickname(nickname)) {
+      throw new ScoreServiceError(
+        'BLOCKED_NICKNAME',
+        'Nickname contains a blocked term.',
+      );
+    }
+
     if (
       !Number.isFinite(input.score) ||
       score < SCORE_SERVICE_LIMITS.minScore ||
@@ -281,6 +306,28 @@ export class ScoreService {
     }
 
     return normalizedLevel;
+  }
+
+  private normalizeBlockedNicknameTerms(terms: readonly string[]): string[] {
+    return Array.from(
+      new Set(
+        terms
+          .map((term) => this.normalizeNicknameForFiltering(term))
+          .filter((term) => term.length > 0),
+      ),
+    );
+  }
+
+  private isBlockedNickname(nickname: string): boolean {
+    const normalizedNickname = this.normalizeNicknameForFiltering(nickname);
+
+    return this.blockedNicknameTerms.some((term) =>
+      normalizedNickname.includes(term),
+    );
+  }
+
+  private normalizeNicknameForFiltering(value: string): string {
+    return value.toLowerCase().replace(/[\s._-]+/gu, '');
   }
 
   private async enforceRateLimit(ipAddress: string): Promise<void> {
