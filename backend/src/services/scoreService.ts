@@ -1,4 +1,5 @@
 export const SCORE_SERVICE_LIMITS = {
+  maxDurationMs: 86_400_000,
   maxNicknameLength: 16,
   maxScore: 999_999,
   maxSubmissionsPerWindow: 5,
@@ -9,8 +10,10 @@ export const SCORE_SERVICE_LIMITS = {
 } as const;
 
 export type ScoreServiceErrorCode =
+  | 'INVALID_DURATION'
   | 'INVALID_LEVEL'
   | 'INVALID_NICKNAME'
+  | 'INVALID_IP_ADDRESS'
   | 'INVALID_SCORE'
   | 'RATE_LIMITED';
 
@@ -25,7 +28,9 @@ export class ScoreServiceError extends Error {
 }
 
 export type SubmitScoreInput = {
-  clientId?: string | null;
+  durationMs?: number;
+  highestLevel?: number;
+  ipAddress: string;
   level?: number;
   nickname: string;
   score: number;
@@ -33,13 +38,16 @@ export type SubmitScoreInput = {
 
 export type ScoreRecord = {
   createdAt: Date;
+  durationMs: number;
+  highestLevel: number;
   id: string;
-  level: number;
+  ipAddress: string;
   nickname: string;
   score: number;
 };
 
 export type RankedScore = ScoreRecord & {
+  level: number;
   rank: number;
 };
 
@@ -49,8 +57,9 @@ export type SubmitScoreResult = {
 
 export type ScoreCreateArgs = {
   data: {
-    clientId: string | null;
-    level: number;
+    durationMs: number;
+    highestLevel: number;
+    ipAddress: string;
     nickname: string;
     score: number;
   };
@@ -66,7 +75,7 @@ export type ScoreModelClient = {
 };
 
 export type ScorePrismaClient = {
-  score: ScoreModelClient;
+  leaderboardEntry: ScoreModelClient;
 };
 
 export type ScoreServiceOptions = {
@@ -76,8 +85,9 @@ export type ScoreServiceOptions = {
 };
 
 type NormalizedScoreInput = {
-  clientId: string | null;
-  level: number;
+  durationMs: number;
+  highestLevel: number;
+  ipAddress: string;
   nickname: string;
   score: number;
 };
@@ -101,14 +111,14 @@ export class ScoreService {
   async submitScore(input: SubmitScoreInput): Promise<SubmitScoreResult> {
     const normalizedInput = this.normalizeInput(input);
 
-    await this.enforceRateLimit(normalizedInput.clientId);
+    await this.enforceRateLimit(normalizedInput.ipAddress);
 
-    const entry = await this.prisma.score.create({
+    const entry = await this.prisma.leaderboardEntry.create({
       data: normalizedInput,
     });
-    const higherScoreCount = await this.prisma.score.count({
+    const higherScoreCount = await this.prisma.leaderboardEntry.count({
       where: {
-        level: entry.level,
+        highestLevel: entry.highestLevel,
         OR: [
           {
             score: {
@@ -128,6 +138,7 @@ export class ScoreService {
     return {
       entry: {
         ...entry,
+        level: entry.highestLevel,
         rank: higherScoreCount + 1,
       },
     };
@@ -136,8 +147,11 @@ export class ScoreService {
   private normalizeInput(input: SubmitScoreInput): NormalizedScoreInput {
     const nickname = input.nickname.trim();
     const score = Math.floor(input.score);
-    const level = Math.floor(input.level ?? SCORE_SERVICE_LIMITS.minLevel);
-    const clientId = input.clientId?.trim() || null;
+    const highestLevel = Math.floor(
+      input.highestLevel ?? input.level ?? SCORE_SERVICE_LIMITS.minLevel,
+    );
+    const durationMs = Math.floor(input.durationMs ?? 0);
+    const ipAddress = input.ipAddress.trim();
 
     if (
       nickname.length === 0 ||
@@ -161,9 +175,11 @@ export class ScoreService {
     }
 
     if (
-      !Number.isFinite(input.level ?? SCORE_SERVICE_LIMITS.minLevel) ||
-      level < SCORE_SERVICE_LIMITS.minLevel ||
-      level > SCORE_SERVICE_LIMITS.totalLevels
+      !Number.isFinite(
+        input.highestLevel ?? input.level ?? SCORE_SERVICE_LIMITS.minLevel,
+      ) ||
+      highestLevel < SCORE_SERVICE_LIMITS.minLevel ||
+      highestLevel > SCORE_SERVICE_LIMITS.totalLevels
     ) {
       throw new ScoreServiceError(
         'INVALID_LEVEL',
@@ -171,26 +187,41 @@ export class ScoreService {
       );
     }
 
+    if (
+      !Number.isFinite(input.durationMs ?? 0) ||
+      durationMs < 0 ||
+      durationMs > SCORE_SERVICE_LIMITS.maxDurationMs
+    ) {
+      throw new ScoreServiceError(
+        'INVALID_DURATION',
+        `Duration must be between 0 and ${SCORE_SERVICE_LIMITS.maxDurationMs} milliseconds.`,
+      );
+    }
+
+    if (ipAddress.length === 0 || ipAddress.length > 45) {
+      throw new ScoreServiceError(
+        'INVALID_IP_ADDRESS',
+        'IP address must be present and at most 45 characters.',
+      );
+    }
+
     return {
-      clientId,
-      level,
+      durationMs,
+      highestLevel,
+      ipAddress,
       nickname,
       score,
     };
   }
 
-  private async enforceRateLimit(clientId: string | null): Promise<void> {
-    if (!clientId) {
-      return;
-    }
-
+  private async enforceRateLimit(ipAddress: string): Promise<void> {
     const windowStart = new Date(this.now().getTime() - this.rateLimitWindowMs);
-    const recentSubmissionCount = await this.prisma.score.count({
+    const recentSubmissionCount = await this.prisma.leaderboardEntry.count({
       where: {
-        clientId,
         createdAt: {
           gte: windowStart,
         },
+        ipAddress,
       },
     });
 
