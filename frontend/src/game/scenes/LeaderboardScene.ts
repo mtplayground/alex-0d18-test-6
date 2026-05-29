@@ -11,6 +11,7 @@ type LeaderboardLevel = (typeof LEVELS)[number];
 
 export class LeaderboardScene extends Phaser.Scene {
   private selectedLevel: LeaderboardLevel = LEVELS[0];
+  private loadRequestId = 0;
   private levelButtons: Phaser.GameObjects.Text[] = [];
   private rowTexts: Phaser.GameObjects.Text[] = [];
   private statusText?: Phaser.GameObjects.Text;
@@ -21,6 +22,8 @@ export class LeaderboardScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+
+    this.loadRequestId = 0;
 
     this.add
       .image(width / 2, height / 2, AssetKeys.MenuBackground)
@@ -206,6 +209,7 @@ export class LeaderboardScene extends Phaser.Scene {
 
   private async loadLeaderboard(): Promise<void> {
     const level = this.selectedLevel;
+    const requestId = ++this.loadRequestId;
 
     this.clearRows();
     this.setStatus(`Loading level ${level} scores...`, '#bae6fd');
@@ -216,18 +220,22 @@ export class LeaderboardScene extends Phaser.Scene {
         limit: LEADERBOARD_LIMIT,
       });
 
-      if (level !== this.selectedLevel) {
+      if (!this.isCurrentLoad(requestId, level)) {
         return;
       }
 
       this.renderEntries(entries);
     } catch (error) {
-      if (level !== this.selectedLevel) {
+      if (!this.isCurrentLoad(requestId, level)) {
         return;
       }
 
       this.setStatus(this.getErrorMessage(error), '#fecdd3');
     }
+  }
+
+  private isCurrentLoad(requestId: number, level: LeaderboardLevel): boolean {
+    return requestId === this.loadRequestId && level === this.selectedLevel;
   }
 
   private renderEntries(entries: LeaderboardEntry[]): void {
