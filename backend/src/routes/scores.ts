@@ -10,6 +10,8 @@ import {
   ListScoresQuerySchema,
   SubmitScoreRequestSchema,
 } from '../schemas/scoreSchemas.js';
+import { logger } from '../lib/logger.js';
+import { HttpError, createValidationError } from '../middleware/errors.js';
 import { ScoreService, ScoreServiceError } from '../services/scoreService.js';
 
 export const scoresRouter = Router();
@@ -22,6 +24,10 @@ scoresRouter.get(
     try {
       const query = ListScoresQuerySchema.parse(request.query);
       const result = await scoreService.listTopScores(query);
+      logger.info('Leaderboard scores listed.', {
+        count: result.entries.length,
+        level: query.level ?? 'all',
+      });
 
       response.json({
         entries: result.entries.map((entry) => ({
@@ -36,7 +42,7 @@ scoresRouter.get(
         })),
       });
     } catch (error) {
-      handleScoreRouteError(error, response, next, 'Invalid score request.');
+      handleScoreRouteError(error, next, 'Invalid score request.');
     }
   },
 );
@@ -49,6 +55,11 @@ scoresRouter.post(
       const result = await scoreService.submitScore({
         ...submission,
         ipAddress: getRequestIp(request),
+      });
+      logger.info('Score submitted.', {
+        highestLevel: result.entry.highestLevel,
+        rank: result.entry.rank,
+        score: result.entry.score,
       });
 
       response.status(201).json({
@@ -64,33 +75,23 @@ scoresRouter.post(
         },
       });
     } catch (error) {
-      handleScoreRouteError(error, response, next, 'Invalid score submission.');
+      handleScoreRouteError(error, next, 'Invalid score submission.');
     }
   },
 );
 
 const handleScoreRouteError = (
   error: unknown,
-  response: Response,
   next: NextFunction,
   validationMessage: string,
 ): void => {
   if (error instanceof z.ZodError) {
-    response.status(400).json({
-      details: error.issues.map((issue) => ({
-        message: issue.message,
-        path: issue.path,
-      })),
-      error: validationMessage,
-    });
+    next(createValidationError(validationMessage, error));
     return;
   }
 
   if (error instanceof ScoreServiceError) {
-    response.status(getScoreServiceStatus(error)).json({
-      code: error.code,
-      error: error.message,
-    });
+    next(new HttpError(getScoreServiceStatus(error), error.message, error.code));
     return;
   }
 
