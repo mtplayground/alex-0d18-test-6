@@ -6,8 +6,8 @@
     "backend"
   ],
   "scripts": {
-    "build": "npm run build:frontend && npm run build:backend",
-    "start": "npm run start --workspace backend",
+    "build": "npm run db:generate --workspace backend && npm run build:frontend && npm run build:backend",
+    "start": "sh ./scripts/start.sh",
     "test:e2e": "playwright test",
     "e2e:serve": "VITE_E2E=1 NODE_ENV=test npm run build && NODE_ENV=test npm run start",
     "dev:backend": "npm run dev --workspace backend",

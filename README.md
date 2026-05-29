@@ -16,8 +16,59 @@ This repository is organized as a monorepo with separate frontend and backend wo
 
 ## App Commands
 
-- `npm run build`: build the frontend and backend.
-- `npm run start`: start the compiled backend, which serves `frontend/dist`.
+- `npm run build`: generate Prisma Client, then build the frontend and backend.
+- `npm run start`: start the compiled backend from the repository root. The start script loads `.env.production` when present, defaults to `0.0.0.0:8080`, refreshes Prisma Client, and serves `frontend/dist` through Express.
+
+## Self-Hosting
+
+`alex-0d18-test-6` requires PostgreSQL for persistent leaderboard data. Provide a PostgreSQL `DATABASE_URL` through the environment or a local `.env.production` file. Do not commit real credentials.
+
+1. Install dependencies:
+
+   ```bash
+   npm ci
+   ```
+
+2. Create production environment settings:
+
+   ```bash
+   cp .env.example .env.production
+   ```
+
+   Edit `.env.production` and set:
+
+   - `HOST=0.0.0.0`
+   - `PORT=8080`
+   - `NODE_ENV=production`
+   - `DATABASE_URL=postgresql://...`
+
+3. Prepare the database:
+
+   ```bash
+   npm run db:migrate --workspace backend
+   ```
+
+4. Build the app:
+
+   ```bash
+   npm run build
+   ```
+
+5. Start the backend from the repository root:
+
+   ```bash
+   npm run start
+   ```
+
+   The backend listens on `0.0.0.0:8080` by default, serves the built frontend, and exposes the API under `/api`.
+
+6. Verify the deployment:
+
+   ```bash
+   curl http://127.0.0.1:8080/healthz
+   ```
+
+The root start script expects `backend/dist/index.js` to exist. Run `npm run build` after dependency changes or source changes before starting production.
 
 ## Frontend Commands
 
