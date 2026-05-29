@@ -13,6 +13,7 @@ import {
   usePlayerBomb,
 } from '../state/GameState';
 import type { GameState, RunResult } from '../state/GameState';
+import { EnemyManager } from '../systems/EnemyManager';
 import { Hud } from '../systems/Hud';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
 import { ScrollingBackground } from '../systems/ScrollingBackground';
@@ -44,6 +45,8 @@ export class GameScene extends Phaser.Scene {
 
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
 
+  private enemies?: EnemyManager;
+
   private fireKey?: Phaser.Input.Keyboard.Key;
 
   private gameState?: GameState;
@@ -69,6 +72,8 @@ export class GameScene extends Phaser.Scene {
     this.background = new ScrollingBackground(this, width, height);
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
     this.bullets = new PlayerBulletPool(this);
+    this.enemies = new EnemyManager(this);
+    this.enemies.spawnOpeningEnemies(width);
     this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
     this.hud = new Hud(this, this.gameState);
@@ -77,6 +82,7 @@ export class GameScene extends Phaser.Scene {
     this.events.on(PLAYER_WEAPON_UPGRADE_EVENT, this.handleWeaponUpgrade, this);
     this.events.on(PLAYER_BOMB_GRANTED_EVENT, this.handleBombGranted, this);
     this.events.on(LEVEL_COMPLETED_EVENT, this.handleLevelCompleted, this);
+    this.events.on(BOMB_DETONATED_EVENT, this.handleBombDetonated, this);
     this.events.once(
       Phaser.Scenes.Events.SHUTDOWN,
       this.removeStateEvents,
@@ -107,6 +113,7 @@ export class GameScene extends Phaser.Scene {
       !this.bullets ||
       !this.bombKey ||
       !this.cursors ||
+      !this.enemies ||
       !this.fireKey ||
       !this.gameState ||
       !this.hud ||
@@ -131,6 +138,7 @@ export class GameScene extends Phaser.Scene {
     this.firePlayerBullet(time);
     this.useBomb();
     this.bullets.update(delta, this.bounds);
+    this.enemies.update(time, delta, this.bounds, this.player);
     this.hud.update(this.gameState);
     this.startResultSceneIfComplete();
   }
@@ -176,6 +184,10 @@ export class GameScene extends Phaser.Scene {
 
     this.events.emit(BOMB_DETONATED_EVENT);
     this.hud.update(this.gameState);
+  }
+
+  private handleBombDetonated(): void {
+    this.enemies?.clearAll();
   }
 
   private handlePlayerHit(damage = DEFAULT_PLAYER_DAMAGE): void {
@@ -239,6 +251,7 @@ export class GameScene extends Phaser.Scene {
     );
     this.events.off(PLAYER_BOMB_GRANTED_EVENT, this.handleBombGranted, this);
     this.events.off(LEVEL_COMPLETED_EVENT, this.handleLevelCompleted, this);
+    this.events.off(BOMB_DETONATED_EVENT, this.handleBombDetonated, this);
   }
 
   private startResultSceneIfComplete(): void {

@@ -1,4 +1,8 @@
 import Phaser from 'phaser';
+import enemyBulletUrl from '../assets/enemy-bullet.svg';
+import enemyDiveUrl from '../assets/enemy-dive.svg';
+import enemyStraightUrl from '../assets/enemy-straight.svg';
+import enemyZigZagUrl from '../assets/enemy-zigzag.svg';
 import menuBackgroundUrl from '../assets/menu-background.svg';
 import menuEmblemUrl from '../assets/menu-emblem.svg';
 import playerBulletUrl from '../assets/player-bullet.svg';
@@ -33,6 +37,10 @@ export class PreloadScene extends Phaser.Scene {
       fill.destroy();
     });
 
+    this.load.image(AssetKeys.EnemyBullet, enemyBulletUrl);
+    this.load.image(AssetKeys.EnemyDive, enemyDiveUrl);
+    this.load.image(AssetKeys.EnemyStraight, enemyStraightUrl);
+    this.load.image(AssetKeys.EnemyZigZag, enemyZigZagUrl);
     this.load.image(AssetKeys.MenuBackground, menuBackgroundUrl);
     this.load.image(AssetKeys.MenuEmblem, menuEmblemUrl);
     this.load.image(AssetKeys.PlayerBullet, playerBulletUrl);
