@@ -8,6 +8,7 @@ export const SceneKeys = {
 export const AssetKeys = {
   MenuBackground: 'menu-background',
   MenuEmblem: 'menu-emblem',
+  StarfieldBackground: 'starfield-background',
   PlayerPlane: 'player-plane',
   PlayerBullet: 'player-bullet',
 } as const;

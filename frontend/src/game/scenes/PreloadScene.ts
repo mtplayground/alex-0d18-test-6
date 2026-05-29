@@ -3,6 +3,7 @@ import menuBackgroundUrl from '../assets/menu-background.svg';
 import menuEmblemUrl from '../assets/menu-emblem.svg';
 import playerBulletUrl from '../assets/player-bullet.svg';
 import playerPlaneUrl from '../assets/player-plane.svg';
+import starfieldBackgroundUrl from '../assets/starfield-background.svg';
 import { AssetKeys, SceneKeys } from '../keys';
 
 export class PreloadScene extends Phaser.Scene {
@@ -36,6 +37,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image(AssetKeys.MenuEmblem, menuEmblemUrl);
     this.load.image(AssetKeys.PlayerBullet, playerBulletUrl);
     this.load.image(AssetKeys.PlayerPlane, playerPlaneUrl);
+    this.load.image(AssetKeys.StarfieldBackground, starfieldBackgroundUrl);
   }
 
   create(): void {
