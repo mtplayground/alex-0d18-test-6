@@ -203,6 +203,61 @@ describe('ScoreService', () => {
     expect(prisma.leaderboardEntry.count).not.toHaveBeenCalled();
   });
 
+  it.each([
+    {
+      code: 'INVALID_SCORE',
+      input: {
+        ipAddress: IP_ADDRESS,
+        nickname: 'Ace',
+        score: Number.NaN,
+      },
+    },
+    {
+      code: 'INVALID_SCORE',
+      input: {
+        ipAddress: IP_ADDRESS,
+        nickname: 'Ace',
+        score: Number.POSITIVE_INFINITY,
+      },
+    },
+    {
+      code: 'INVALID_LEVEL',
+      input: {
+        ipAddress: IP_ADDRESS,
+        level: Number.NaN,
+        nickname: 'Ace',
+        score: 100,
+      },
+    },
+    {
+      code: 'INVALID_LEVEL',
+      input: {
+        highestLevel: Number.NEGATIVE_INFINITY,
+        ipAddress: IP_ADDRESS,
+        nickname: 'Ace',
+        score: 100,
+      },
+    },
+    {
+      code: 'INVALID_DURATION',
+      input: {
+        durationMs: Number.POSITIVE_INFINITY,
+        ipAddress: IP_ADDRESS,
+        nickname: 'Ace',
+        score: 100,
+      },
+    },
+  ])('rejects non-finite numeric input with $code', async ({ code, input }) => {
+    const prisma = createMockPrisma();
+    const service = createService(prisma);
+
+    await expect(service.submitScore(input)).rejects.toMatchObject({
+      code,
+    });
+    expect(prisma.leaderboardEntry.count).not.toHaveBeenCalled();
+    expect(prisma.leaderboardEntry.create).not.toHaveBeenCalled();
+  });
+
   it('rejects scores above the configured maximum before hitting Prisma', async () => {
     const prisma = createMockPrisma();
     const service = createService(prisma);
