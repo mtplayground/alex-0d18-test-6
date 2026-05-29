@@ -114,6 +114,46 @@ describe('scores api client', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/scores');
   });
 
+  it('passes abort signals to score requests', async () => {
+    const controller = new AbortController();
+    const fetchMock = mockFetch(
+      jsonResponse({
+        entry: {
+          nickname: 'Ace',
+          rank: 1,
+          score: 100,
+        },
+      }),
+    );
+
+    await submitScore(
+      {
+        nickname: 'Ace',
+        score: 100,
+      },
+      {
+        signal: controller.signal,
+      },
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/scores',
+      expect.objectContaining({
+        signal: controller.signal,
+      }),
+    );
+
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ entries: [] }));
+
+    await getLeaderboard({
+      level: 2,
+      signal: controller.signal,
+    });
+    expect(fetchMock).toHaveBeenCalledWith('/api/scores?level=2', {
+      signal: controller.signal,
+    });
+  });
+
   it('throws structured API errors from JSON error responses', async () => {
     mockFetch(
       jsonResponse(
