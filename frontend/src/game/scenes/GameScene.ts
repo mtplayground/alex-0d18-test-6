@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { openingWaveScript } from '../data/waves';
+import { levelConfigs } from '../data/levels';
+import type { LevelConfig } from '../data/levels';
 import { PlayerPlane } from '../entities/PlayerPlane';
 import { SceneKeys } from '../keys';
 import {
@@ -51,11 +52,17 @@ export class GameScene extends Phaser.Scene {
 
   private bossHealthBar?: BossHealthBar;
 
+  private bossDefeated = false;
+
+  private bossSpawned = false;
+
   private bosses?: BossManager;
 
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
 
   private collisions?: CollisionSystem;
+
+  private currentLevelConfig?: LevelConfig;
 
   private enemies?: EnemyManager;
 
@@ -87,10 +94,7 @@ export class GameScene extends Phaser.Scene {
     this.bounds = new Phaser.Geom.Rectangle(0, 0, width, height);
     this.bullets = new PlayerBulletPool(this);
     this.bosses = new BossManager(this);
-    this.bosses.spawnBoss(width / 2, -104);
     this.enemies = new EnemyManager(this);
-    this.enemies.reset();
-    this.waves = new WaveSystem(this.enemies, openingWaveScript);
     this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
     this.hud = new Hud(this, this.gameState);
@@ -115,6 +119,7 @@ export class GameScene extends Phaser.Scene {
     this.events.on(PLAYER_BOMB_GRANTED_EVENT, this.handleBombGranted, this);
     this.events.on(LEVEL_COMPLETED_EVENT, this.handleLevelCompleted, this);
     this.events.on(BOMB_DETONATED_EVENT, this.handleBombDetonated, this);
+    this.startLevel(0);
     this.events.once(
       Phaser.Scenes.Events.SHUTDOWN,
       this.removeStateEvents,
@@ -178,6 +183,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies.update(time, delta, this.bounds, this.player);
     this.bosses.update(time, delta, this.bounds, this.player);
     this.bossHealthBar.update(this.bosses.getStatus());
+    this.updateLevelProgression();
     this.hud.update(this.gameState);
     this.startResultSceneIfComplete();
   }
@@ -259,6 +265,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     addScore(this.gameState, scoreValue);
+    this.bossDefeated = true;
     this.bossHealthBar?.hide();
     this.hud.update(this.gameState);
   };
@@ -302,6 +309,71 @@ export class GameScene extends Phaser.Scene {
     if (result) {
       this.startResultScene(result);
     }
+  }
+
+  private startLevel(levelIndex: number): void {
+    if (
+      !this.enemies ||
+      !this.bosses ||
+      !this.bossHealthBar ||
+      !this.gameState
+    ) {
+      return;
+    }
+
+    const nextConfig = levelConfigs[levelIndex] ?? levelConfigs[0];
+
+    this.currentLevelConfig = nextConfig;
+    this.bossDefeated = false;
+    this.bossSpawned = false;
+    this.gameState.currentLevel = nextConfig.id;
+    this.gameState.totalLevels = levelConfigs.length;
+    this.enemies.reset();
+    this.bosses.clearBoss();
+    this.bosses.clearBullets();
+    this.bossHealthBar.hide();
+    this.waves = new WaveSystem(this.enemies, nextConfig.waveScript);
+    this.hud?.update(this.gameState);
+  }
+
+  private updateLevelProgression(): void {
+    if (
+      !this.bounds ||
+      !this.bosses ||
+      !this.currentLevelConfig ||
+      !this.enemies ||
+      !this.gameState ||
+      !this.waves
+    ) {
+      return;
+    }
+
+    if (!this.waves.isComplete() || this.enemies.hasActiveEnemies()) {
+      return;
+    }
+
+    if (!this.bossSpawned) {
+      this.bossSpawned = true;
+      this.bosses.spawnBoss(
+        this.currentLevelConfig.bossType,
+        this.bounds.width / 2,
+        -104,
+      );
+      return;
+    }
+
+    if (!this.bossDefeated || this.bosses.isBossActive()) {
+      return;
+    }
+
+    const result = completeCurrentLevel(this.gameState);
+
+    if (result) {
+      this.startResultScene(result);
+      return;
+    }
+
+    this.startLevel(this.gameState.currentLevel - 1);
   }
 
   private removeStateEvents(): void {

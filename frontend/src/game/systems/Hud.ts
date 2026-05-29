@@ -9,6 +9,8 @@ export class Hud {
 
   private readonly healthFill: Phaser.GameObjects.Graphics;
 
+  private readonly levelText: Phaser.GameObjects.Text;
+
   private readonly livesText: Phaser.GameObjects.Text;
 
   private readonly scoreText: Phaser.GameObjects.Text;
@@ -74,6 +76,13 @@ export class Hud {
       fontStyle: 'bold',
     });
 
+    this.levelText = scene.add.text(250, 56, '', {
+      color: '#c4b5fd',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16px',
+      fontStyle: 'bold',
+    });
+
     for (const item of [
       panel,
       healthLabel,
@@ -84,6 +93,7 @@ export class Hud {
       this.shieldText,
       this.weaponText,
       this.bombsText,
+      this.levelText,
     ]) {
       item.setDepth(100);
       item.setScrollFactor(0);
@@ -116,5 +126,6 @@ export class Hud {
     this.weaponText.setText(`WEAPON ${state.weaponLevel}`);
     this.bombsText.setText(`BOMBS ${state.bombs}`);
     this.bombsText.setColor(state.bombs > 0 ? '#fde68a' : '#94a3b8');
+    this.levelText.setText(`LEVEL ${state.currentLevel}/${state.totalLevels}`);
   }
 }
