@@ -1,8 +1,8 @@
 import type { WaveScript } from '../systems/WaveSystem';
 
-export const openingWaveScript: WaveScript = {
-  durationMs: 12_000,
-  loop: true,
+export const levelOneWaveScript: WaveScript = {
+  durationMs: 10_500,
+  loop: false,
   spawns: [
     {
       atMs: 0,
@@ -14,30 +14,116 @@ export const openingWaveScript: WaveScript = {
       y: -56,
     },
     {
-      atMs: 2_200,
+      atMs: 2_300,
       count: 2,
       enemy: 'zigzag',
-      intervalMs: 600,
-      xRatio: 0.32,
-      xStepRatio: 0.36,
+      intervalMs: 680,
+      xRatio: 0.3,
+      xStepRatio: 0.4,
       y: -84,
     },
     {
-      atMs: 4_700,
+      atMs: 6_000,
       count: 2,
       enemy: 'dive',
-      intervalMs: 760,
-      xRatio: 0.75,
-      xStepRatio: -0.5,
+      intervalMs: 820,
+      xRatio: 0.72,
+      xStepRatio: -0.44,
       y: -72,
     },
+  ],
+};
+
+export const levelTwoWaveScript: WaveScript = {
+  durationMs: 13_000,
+  loop: false,
+  spawns: [
     {
-      atMs: 8_200,
+      atMs: 0,
       count: 4,
       enemy: 'straight',
-      intervalMs: 260,
+      intervalMs: 320,
       xRatio: 0.14,
       xStepRatio: 0.24,
+      y: -56,
+    },
+    {
+      atMs: 2_000,
+      count: 3,
+      enemy: 'zigzag',
+      intervalMs: 520,
+      xRatio: 0.22,
+      xStepRatio: 0.28,
+      y: -90,
+    },
+    {
+      atMs: 5_400,
+      count: 3,
+      enemy: 'dive',
+      intervalMs: 620,
+      xRatio: 0.82,
+      xStepRatio: -0.32,
+      y: -78,
+    },
+    {
+      atMs: 9_000,
+      count: 3,
+      enemy: 'straight',
+      intervalMs: 260,
+      xRatio: 0.28,
+      xStepRatio: 0.22,
+      y: -56,
+    },
+  ],
+};
+
+export const levelThreeWaveScript: WaveScript = {
+  durationMs: 16_000,
+  loop: false,
+  spawns: [
+    {
+      atMs: 0,
+      count: 5,
+      enemy: 'straight',
+      intervalMs: 240,
+      xRatio: 0.1,
+      xStepRatio: 0.2,
+      y: -56,
+    },
+    {
+      atMs: 1_900,
+      count: 4,
+      enemy: 'zigzag',
+      intervalMs: 440,
+      xRatio: 0.16,
+      xStepRatio: 0.22,
+      y: -88,
+    },
+    {
+      atMs: 5_100,
+      count: 4,
+      enemy: 'dive',
+      intervalMs: 520,
+      xRatio: 0.86,
+      xStepRatio: -0.25,
+      y: -80,
+    },
+    {
+      atMs: 9_200,
+      count: 3,
+      enemy: 'zigzag',
+      intervalMs: 360,
+      xRatio: 0.25,
+      xStepRatio: 0.25,
+      y: -100,
+    },
+    {
+      atMs: 12_500,
+      count: 5,
+      enemy: 'straight',
+      intervalMs: 200,
+      xRatio: 0.1,
+      xStepRatio: 0.2,
       y: -56,
     },
   ],

@@ -5,6 +5,8 @@ import type { EnemyBulletPool } from '../systems/EnemyBulletPool';
 
 export type BossPhase = 1 | 2;
 
+export type BossType = 'command';
+
 export type BossStatus = {
   health: number;
   maxHealth: number;

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Boss } from '../entities/Boss';
-import type { BossStatus } from '../entities/Boss';
+import type { BossStatus, BossType } from '../entities/Boss';
 import type { PlayerPlane } from '../entities/PlayerPlane';
 import { EnemyBulletPool } from './EnemyBulletPool';
 
@@ -16,9 +16,15 @@ export class BossManager {
     this.bulletPool = new EnemyBulletPool(scene);
   }
 
-  spawnBoss(x: number, y: number): void {
+  spawnBoss(type: BossType, x: number, y: number): void {
     this.clearBoss();
-    this.boss = new Boss(this.scene, x, y);
+
+    switch (type) {
+      case 'command':
+        this.boss = new Boss(this.scene, x, y);
+        break;
+    }
+
     this.bossGroup.add(this.boss);
   }
 
@@ -48,6 +54,10 @@ export class BossManager {
     }
 
     return this.boss.getStatus();
+  }
+
+  isBossActive(): boolean {
+    return this.boss?.active === true;
   }
 
   update(

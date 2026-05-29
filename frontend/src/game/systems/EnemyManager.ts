@@ -53,6 +53,10 @@ export class EnemyManager {
     return this.group;
   }
 
+  hasActiveEnemies(): boolean {
+    return this.enemies.some((enemy) => enemy.active);
+  }
+
   update(
     timeMs: number,
     deltaMs: number,

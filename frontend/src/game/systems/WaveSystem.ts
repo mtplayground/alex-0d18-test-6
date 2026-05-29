@@ -55,6 +55,14 @@ export class WaveSystem {
     this.nextSpawnIndex = 0;
   }
 
+  isComplete(): boolean {
+    return (
+      !this.script.loop &&
+      this.elapsedMs >= this.script.durationMs &&
+      this.nextSpawnIndex >= this.schedule.length
+    );
+  }
+
   private spawnDueEnemies(width: number): void {
     while (
       this.nextSpawnIndex < this.schedule.length &&
