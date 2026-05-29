@@ -154,6 +154,14 @@ describe('ScoreService', () => {
       code: 'BLOCKED_NICKNAME',
       input: {
         ipAddress: IP_ADDRESS,
+        nickname: 'Ａｄｍｉｎ',
+        score: 100,
+      },
+    },
+    {
+      code: 'BLOCKED_NICKNAME',
+      input: {
+        ipAddress: IP_ADDRESS,
         nickname: '官 方玩家',
         score: 100,
       },
@@ -292,7 +300,7 @@ describe('ScoreService', () => {
     await expect(
       service.submitScore({
         ipAddress: IP_ADDRESS,
-        nickname: 'Score-Keeper',
+        nickname: 'Score*Keeper',
         score: 100,
       }),
     ).rejects.toMatchObject({

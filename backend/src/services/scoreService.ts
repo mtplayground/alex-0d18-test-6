@@ -327,7 +327,10 @@ export class ScoreService {
   }
 
   private normalizeNicknameForFiltering(value: string): string {
-    return value.toLowerCase().replace(/[\s._-]+/gu, '');
+    return value
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[\p{Separator}\p{Punctuation}\p{Symbol}]+/gu, '');
   }
 
   private async enforceRateLimit(ipAddress: string): Promise<void> {
