@@ -4,8 +4,11 @@ import { SceneKeys } from '../keys';
 import {
   applyPlayerHit,
   createInitialGameState,
+  grantPlayerBomb,
   grantPlayerShield,
   isPlayerInvulnerable,
+  upgradePlayerWeapon,
+  usePlayerBomb,
 } from '../state/GameState';
 import type { GameState } from '../state/GameState';
 import { Hud } from '../systems/Hud';
@@ -14,8 +17,11 @@ import { ScrollingBackground } from '../systems/ScrollingBackground';
 
 const FIRE_INTERVAL_MS = 140;
 const DEFAULT_PLAYER_DAMAGE = 34;
+const BOMB_DETONATED_EVENT = 'screen-bomb-detonated';
+const PLAYER_BOMB_GRANTED_EVENT = 'player-bomb-granted';
 const PLAYER_HIT_EVENT = 'player-hit';
 const PLAYER_SHIELD_EVENT = 'player-shield-granted';
+const PLAYER_WEAPON_UPGRADE_EVENT = 'player-weapon-upgraded';
 
 type MovementKeys = {
   up: Phaser.Input.Keyboard.Key;
@@ -30,6 +36,8 @@ export class GameScene extends Phaser.Scene {
   private bounds?: Phaser.Geom.Rectangle;
 
   private background?: ScrollingBackground;
+
+  private bombKey?: Phaser.Input.Keyboard.Key;
 
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
 
@@ -60,6 +68,8 @@ export class GameScene extends Phaser.Scene {
     this.hud = new Hud(this, this.gameState);
     this.events.on(PLAYER_HIT_EVENT, this.handlePlayerHit, this);
     this.events.on(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
+    this.events.on(PLAYER_WEAPON_UPGRADE_EVENT, this.handleWeaponUpgrade, this);
+    this.events.on(PLAYER_BOMB_GRANTED_EVENT, this.handleBombGranted, this);
     this.events.once(
       Phaser.Scenes.Events.SHUTDOWN,
       this.removeStateEvents,
@@ -73,6 +83,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.cursors = keyboard.createCursorKeys();
+    this.bombKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
     this.fireKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.wasd = {
       up: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -87,6 +98,7 @@ export class GameScene extends Phaser.Scene {
       !this.bounds ||
       !this.background ||
       !this.bullets ||
+      !this.bombKey ||
       !this.cursors ||
       !this.fireKey ||
       !this.gameState ||
@@ -110,12 +122,13 @@ export class GameScene extends Phaser.Scene {
       this.gameState.hasShield,
     );
     this.firePlayerBullet(time);
+    this.useBomb();
     this.bullets.update(delta, this.bounds);
     this.hud.update(this.gameState);
   }
 
   private firePlayerBullet(time: number): void {
-    if (!this.bullets || !this.fireKey || !this.player) {
+    if (!this.bullets || !this.fireKey || !this.gameState || !this.player) {
       return;
     }
 
@@ -123,14 +136,38 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const fired = this.bullets.fire(
+    if (this.gameState.isGameOver) {
+      return;
+    }
+
+    const fired = this.bullets.firePattern(
       this.player.x,
       this.player.y - this.player.displayHeight / 2,
+      this.gameState.weaponLevel,
     );
 
     if (fired) {
       this.nextShotAt = time + FIRE_INTERVAL_MS;
     }
+  }
+
+  private useBomb(): void {
+    if (!this.bombKey || !this.gameState || !this.hud) {
+      return;
+    }
+
+    if (!Phaser.Input.Keyboard.JustDown(this.bombKey)) {
+      return;
+    }
+
+    const usedBomb = usePlayerBomb(this.gameState);
+
+    if (!usedBomb) {
+      return;
+    }
+
+    this.events.emit(BOMB_DETONATED_EVENT);
+    this.hud.update(this.gameState);
   }
 
   private handlePlayerHit(damage = DEFAULT_PLAYER_DAMAGE): void {
@@ -151,9 +188,33 @@ export class GameScene extends Phaser.Scene {
     this.hud.update(this.gameState);
   }
 
+  private handleWeaponUpgrade(): void {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    upgradePlayerWeapon(this.gameState);
+    this.hud.update(this.gameState);
+  }
+
+  private handleBombGranted(amount = 1): void {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    grantPlayerBomb(this.gameState, amount);
+    this.hud.update(this.gameState);
+  }
+
   private removeStateEvents(): void {
     this.events.off(PLAYER_HIT_EVENT, this.handlePlayerHit, this);
     this.events.off(PLAYER_SHIELD_EVENT, this.handlePlayerShieldGranted, this);
+    this.events.off(
+      PLAYER_WEAPON_UPGRADE_EVENT,
+      this.handleWeaponUpgrade,
+      this,
+    );
+    this.events.off(PLAYER_BOMB_GRANTED_EVENT, this.handleBombGranted, this);
   }
 
   private isUpDown(): boolean {
