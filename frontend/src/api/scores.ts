@@ -6,6 +6,10 @@ export type ScoreSubmission = {
   score: number;
 };
 
+export type ApiRequestOptions = {
+  signal?: AbortSignal;
+};
+
 export type SubmittedScoreEntry = {
   createdAt: string | null;
   durationMs: number | null;
@@ -36,6 +40,7 @@ export type LeaderboardEntry = {
 export type GetLeaderboardOptions = {
   level?: number;
   limit?: number;
+  signal?: AbortSignal;
 };
 
 export type ApiErrorDetail = {
@@ -71,14 +76,24 @@ const DEFAULT_LEADERBOARD_LIMIT = 50;
 
 export const submitScore = async (
   submission: ScoreSubmission,
+  options: ApiRequestOptions = {},
 ): Promise<SubmitScoreResult> => {
-  const payload = await requestJson<ScoreSubmissionResponse>(SCORES_ENDPOINT, {
+  const requestInit: RequestInit = {
     body: JSON.stringify(submission),
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
-  });
+  };
+
+  if (options.signal) {
+    requestInit.signal = options.signal;
+  }
+
+  const payload = await requestJson<ScoreSubmissionResponse>(
+    SCORES_ENDPOINT,
+    requestInit,
+  );
   const entry = normalizeSubmittedScoreEntry(payload.entry);
 
   return {
@@ -106,7 +121,10 @@ export const getLeaderboard = async (
   const endpoint = searchParams.size
     ? `${SCORES_ENDPOINT}?${searchParams.toString()}`
     : SCORES_ENDPOINT;
-  const payload = await requestJson<LeaderboardResponse | unknown[]>(endpoint);
+  const payload = await requestJson<LeaderboardResponse | unknown[]>(
+    endpoint,
+    options.signal ? { signal: options.signal } : undefined,
+  );
 
   const rawEntries = Array.isArray(payload)
     ? payload
