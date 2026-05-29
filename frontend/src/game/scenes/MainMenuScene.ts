@@ -13,6 +13,9 @@ export class MainMenuScene extends Phaser.Scene {
     const startGame = (): void => {
       this.scene.start(SceneKeys.Game);
     };
+    const openLeaderboard = (): void => {
+      this.scene.start(SceneKeys.Leaderboard);
+    };
 
     this.add
       .image(width / 2, height / 2, AssetKeys.MenuBackground)
@@ -67,28 +70,40 @@ export class MainMenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
-    const startButton = this.add
-      .text(width / 2, height * 0.72, 'START', {
+    this.createButton(width / 2, height * 0.72, 'START', startGame);
+    this.createButton(width / 2, height * 0.83, 'LEADERBOARD', openLeaderboard);
+
+    this.input.keyboard?.once('keydown-ENTER', startGame);
+    this.input.keyboard?.once('keydown-L', openLeaderboard);
+  }
+
+  private createButton(
+    x: number,
+    y: number,
+    label: string,
+    onClick: () => void,
+  ): void {
+    const button = this.add
+      .text(x, y, label, {
         backgroundColor: '#0f766e',
         color: '#ffffff',
-        fixedWidth: 180,
+        fixedWidth: 220,
         fontFamily: 'Arial, sans-serif',
-        fontSize: '24px',
+        fontSize: '22px',
         padding: { x: 18, y: 12 },
       })
       .setAlign('center')
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
-    startButton.on('pointerover', () => {
-      startButton.setBackgroundColor('#0d9488');
+    button.on('pointerover', () => {
+      button.setBackgroundColor('#0d9488');
     });
 
-    startButton.on('pointerout', () => {
-      startButton.setBackgroundColor('#0f766e');
+    button.on('pointerout', () => {
+      button.setBackgroundColor('#0f766e');
     });
 
-    startButton.on('pointerdown', startGame);
-    this.input.keyboard?.once('keydown-ENTER', startGame);
+    button.on('pointerdown', onClick);
   }
 }
