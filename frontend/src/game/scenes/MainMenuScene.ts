@@ -8,6 +8,9 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+    const startGame = (): void => {
+      this.scene.start(SceneKeys.Game);
+    };
 
     this.add
       .image(width / 2, height / 2, AssetKeys.MenuBackground)
@@ -55,13 +58,7 @@ export class MainMenuScene extends Phaser.Scene {
       startButton.setBackgroundColor('#0f766e');
     });
 
-    startButton.on('pointerdown', () => {
-      this.tweens.add({
-        targets: startButton,
-        scale: 0.94,
-        duration: 80,
-        yoyo: true,
-      });
-    });
+    startButton.on('pointerdown', startGame);
+    this.input.keyboard?.once('keydown-ENTER', startGame);
   }
 }

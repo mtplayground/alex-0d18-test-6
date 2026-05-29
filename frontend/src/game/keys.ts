@@ -2,9 +2,11 @@ export const SceneKeys = {
   Boot: 'BootScene',
   Preload: 'PreloadScene',
   MainMenu: 'MainMenuScene',
+  Game: 'GameScene',
 } as const;
 
 export const AssetKeys = {
   MenuBackground: 'menu-background',
   MenuEmblem: 'menu-emblem',
+  PlayerPlane: 'player-plane',
 } as const;
