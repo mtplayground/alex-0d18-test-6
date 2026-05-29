@@ -1,29 +1,12 @@
 import Phaser from 'phaser';
 import { PlayerBullet } from '../entities/PlayerBullet';
 import type { WeaponLevel } from '../state/GameState';
+import {
+  canFirePlayerBulletPattern,
+  getPlayerBulletPattern,
+} from './playerBulletPatterns';
 
 const DEFAULT_POOL_SIZE = 64;
-
-type BulletPatternItem = {
-  horizontalSpeed: number;
-  offsetX: number;
-};
-
-const WEAPON_PATTERNS: Record<WeaponLevel, BulletPatternItem[]> = {
-  1: [{ horizontalSpeed: 0, offsetX: 0 }],
-  2: [
-    { horizontalSpeed: -180, offsetX: -14 },
-    { horizontalSpeed: 0, offsetX: 0 },
-    { horizontalSpeed: 180, offsetX: 14 },
-  ],
-  3: [
-    { horizontalSpeed: -260, offsetX: -24 },
-    { horizontalSpeed: -130, offsetX: -12 },
-    { horizontalSpeed: 0, offsetX: 0 },
-    { horizontalSpeed: 130, offsetX: 12 },
-    { horizontalSpeed: 260, offsetX: 24 },
-  ],
-};
 
 export class PlayerBulletPool {
   private readonly bullets: PlayerBullet[];
@@ -40,12 +23,12 @@ export class PlayerBulletPool {
   }
 
   firePattern(x: number, y: number, weaponLevel: WeaponLevel): boolean {
-    const pattern = WEAPON_PATTERNS[weaponLevel];
+    const pattern = getPlayerBulletPattern(weaponLevel);
     const availableBullets = this.bullets.filter((candidate) => {
       return !candidate.active;
     });
 
-    if (availableBullets.length < pattern.length) {
+    if (!canFirePlayerBulletPattern(availableBullets.length, weaponLevel)) {
       return false;
     }
 
