@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Boss } from '../entities/Boss';
 import type { Enemy } from '../entities/Enemy';
 import type { EnemyBullet } from '../entities/EnemyBullet';
+import type { Pickup, PickupType } from '../entities/Pickup';
 import type { PlayerBullet } from '../entities/PlayerBullet';
 import type { PlayerPlane } from '../entities/PlayerPlane';
 
@@ -12,8 +13,10 @@ type CollisionSystemConfig = {
   enemyBullets: Phaser.GameObjects.Group;
   onBossDamaged?: () => void;
   onBossDestroyed?: (scoreValue: number) => void;
-  onEnemyDestroyed: (scoreValue: number) => void;
+  onEnemyDestroyed: (scoreValue: number, x: number, y: number) => void;
   onPlayerHit: (damage: number) => void;
+  onPickupCollected?: (type: PickupType) => void;
+  pickups?: Phaser.GameObjects.Group;
   player: PlayerPlane;
   playerBullets: Phaser.GameObjects.Group;
 };
@@ -77,6 +80,16 @@ export class CollisionSystem {
         ),
       );
     }
+
+    if (config.pickups) {
+      this.colliders.push(
+        scene.physics.add.overlap(
+          config.player,
+          config.pickups,
+          this.handlePlayerPickup,
+        ),
+      );
+    }
   }
 
   destroy(): void {
@@ -100,10 +113,13 @@ export class CollisionSystem {
       return;
     }
 
+    const dropX = enemy.x;
+    const dropY = enemy.y;
+
     bullet.recycle();
 
     if (enemy.takeDamage(PLAYER_BULLET_DAMAGE)) {
-      this.config.onEnemyDestroyed(enemy.scoreValue);
+      this.config.onEnemyDestroyed(enemy.scoreValue, dropX, dropY);
     }
   };
 
@@ -186,6 +202,26 @@ export class CollisionSystem {
 
     bullet.recycle();
     this.config.onPlayerHit(ENEMY_BULLET_DAMAGE);
+  };
+
+  private readonly handlePlayerPickup = (
+    playerObject: ArcadeOverlapObject,
+    pickupObject: ArcadeOverlapObject,
+  ): void => {
+    const player = this.resolveGameObject(playerObject) as PlayerPlane | null;
+    const pickup = this.resolveGameObject(pickupObject) as Pickup | null;
+
+    if (!player || !pickup) {
+      return;
+    }
+
+    if (!player.active || !pickup.active) {
+      return;
+    }
+
+    const type = pickup.pickupType;
+    pickup.recycle();
+    this.config.onPickupCollected?.(type);
   };
 
   private resolveGameObject(

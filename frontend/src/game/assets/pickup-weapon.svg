@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="weaponGlow" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fef08a"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="25" fill="#111827" stroke="#facc15" stroke-width="4"/>
+  <path d="M18 39 32 15l14 24-10-4v14h-8V35l-10 4Z" fill="url(#weaponGlow)" stroke="#fff7ed" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M22 47h20" stroke="#fef3c7" stroke-width="4" stroke-linecap="round"/>
+</svg>

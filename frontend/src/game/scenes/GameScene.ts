@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { levelConfigs } from '../data/levels';
 import type { LevelConfig } from '../data/levels';
+import type { PickupType } from '../entities/Pickup';
 import { PlayerPlane } from '../entities/PlayerPlane';
 import { SceneKeys } from '../keys';
 import {
@@ -21,6 +22,7 @@ import { BossManager } from '../systems/BossManager';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import { EnemyManager } from '../systems/EnemyManager';
 import { Hud } from '../systems/Hud';
+import { PickupManager } from '../systems/PickupManager';
 import { PlayerBulletPool } from '../systems/PlayerBulletPool';
 import { ScrollingBackground } from '../systems/ScrollingBackground';
 import { WaveSystem } from '../systems/WaveSystem';
@@ -76,6 +78,8 @@ export class GameScene extends Phaser.Scene {
 
   private player?: PlayerPlane;
 
+  private pickups?: PickupManager;
+
   private resultStarted = false;
 
   private wasd?: MovementKeys;
@@ -95,6 +99,7 @@ export class GameScene extends Phaser.Scene {
     this.bullets = new PlayerBulletPool(this);
     this.bosses = new BossManager(this);
     this.enemies = new EnemyManager(this);
+    this.pickups = new PickupManager(this);
     this.gameState = createInitialGameState();
     this.player = new PlayerPlane(this, width / 2, height * 0.78);
     this.hud = new Hud(this, this.gameState);
@@ -110,6 +115,8 @@ export class GameScene extends Phaser.Scene {
       onPlayerHit: (damage) => {
         this.handlePlayerHit(damage);
       },
+      onPickupCollected: this.handlePickupCollected,
+      pickups: this.pickups.getGroup(),
       player: this.player,
       playerBullets: this.bullets.getGroup(),
     });
@@ -157,6 +164,7 @@ export class GameScene extends Phaser.Scene {
       !this.fireKey ||
       !this.gameState ||
       !this.hud ||
+      !this.pickups ||
       !this.player ||
       !this.wasd ||
       !this.waves
@@ -179,6 +187,7 @@ export class GameScene extends Phaser.Scene {
     this.firePlayerBullet(time);
     this.useBomb();
     this.bullets.update(delta, this.bounds);
+    this.pickups.update(delta, this.bounds);
     this.waves.update(delta, this.bounds.width);
     this.enemies.update(time, delta, this.bounds, this.player);
     this.bosses.update(time, delta, this.bounds, this.player);
@@ -246,12 +255,37 @@ export class GameScene extends Phaser.Scene {
     this.startResultSceneIfComplete();
   }
 
-  private readonly handleEnemyDestroyed = (scoreValue: number): void => {
+  private readonly handleEnemyDestroyed = (
+    scoreValue: number,
+    x: number,
+    y: number,
+  ): void => {
     if (!this.gameState || !this.hud) {
       return;
     }
 
     addScore(this.gameState, scoreValue);
+    this.pickups?.tryDrop(x, y);
+    this.hud.update(this.gameState);
+  };
+
+  private readonly handlePickupCollected = (type: PickupType): void => {
+    if (!this.gameState || !this.hud) {
+      return;
+    }
+
+    switch (type) {
+      case 'weapon':
+        upgradePlayerWeapon(this.gameState);
+        break;
+      case 'shield':
+        grantPlayerShield(this.gameState);
+        break;
+      case 'bomb':
+        grantPlayerBomb(this.gameState);
+        break;
+    }
+
     this.hud.update(this.gameState);
   };
 
@@ -329,6 +363,7 @@ export class GameScene extends Phaser.Scene {
     this.gameState.currentLevel = nextConfig.id;
     this.gameState.totalLevels = levelConfigs.length;
     this.enemies.reset();
+    this.pickups?.clearAll();
     this.bosses.clearBoss();
     this.bosses.clearBullets();
     this.bossHealthBar.hide();
