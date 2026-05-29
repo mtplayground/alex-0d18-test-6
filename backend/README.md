@@ -18,6 +18,10 @@ Server workspace built with Express, TypeScript, Zod, and dotenv.
 
 - `GET /healthz`: returns process health metadata.
 
+## Static Frontend
+
+The backend serves the built frontend from `frontend/dist` with `express.static`. Run `npm run build` at the repository root before starting the backend when serving the full app.
+
 ## Database
 
 Prisma is configured for PostgreSQL via `DATABASE_URL`. The initial schema contains no application models.
