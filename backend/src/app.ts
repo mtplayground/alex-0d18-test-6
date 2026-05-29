@@ -1,27 +1,8 @@
-import type { ErrorRequestHandler, RequestHandler } from 'express';
 import express from 'express';
+import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { healthRouter } from './routes/health.js';
 import { scoresRouter } from './routes/scores.js';
 import { mountFrontendStatic } from './static/frontend.js';
-
-const notFoundHandler: RequestHandler = (_request, response) => {
-  response.status(404).json({
-    error: 'Not Found',
-  });
-};
-
-const errorHandler: ErrorRequestHandler = (
-  error,
-  _request,
-  response,
-  _next,
-) => {
-  console.error(error);
-
-  response.status(500).json({
-    error: 'Internal Server Error',
-  });
-};
 
 export const createApp = (): express.Express => {
   const app = express();
