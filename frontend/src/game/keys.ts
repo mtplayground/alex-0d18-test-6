@@ -7,6 +7,10 @@ export const SceneKeys = {
 } as const;
 
 export const AssetKeys = {
+  EnemyBullet: 'enemy-bullet',
+  EnemyDive: 'enemy-dive',
+  EnemyStraight: 'enemy-straight',
+  EnemyZigZag: 'enemy-zigzag',
   MenuBackground: 'menu-background',
   MenuEmblem: 'menu-emblem',
   StarfieldBackground: 'starfield-background',
