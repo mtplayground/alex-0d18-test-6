@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { AssetKeys, SceneKeys } from '../keys';
+import { SaveSystem } from '../systems/SaveSystem';
 
 export class MainMenuScene extends Phaser.Scene {
   constructor() {
@@ -8,6 +9,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+    const saveData = new SaveSystem().read();
     const startGame = (): void => {
       this.scene.start(SceneKeys.Game);
     };
@@ -37,8 +39,36 @@ export class MainMenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.add
+      .text(
+        width / 2,
+        height * 0.56,
+        `BEST SCORE ${saveData.bestScore.toString().padStart(6, '0')}`,
+        {
+          color: '#fef3c7',
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '18px',
+          fontStyle: 'bold',
+        },
+      )
+      .setOrigin(0.5);
+
+    this.add
+      .text(
+        width / 2,
+        height * 0.61,
+        `UNLOCKED LEVEL ${saveData.highestLevel}`,
+        {
+          color: '#e0f2fe',
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '18px',
+          fontStyle: 'bold',
+        },
+      )
+      .setOrigin(0.5);
+
     const startButton = this.add
-      .text(width / 2, height * 0.64, 'START', {
+      .text(width / 2, height * 0.72, 'START', {
         backgroundColor: '#0f766e',
         color: '#ffffff',
         fixedWidth: 180,

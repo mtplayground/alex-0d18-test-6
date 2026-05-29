@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { AssetKeys, SceneKeys } from '../keys';
 import type { RunOutcome, RunResult } from '../state/GameState';
+import type { SaveData } from '../systems/SaveSystem';
+import { SaveSystem } from '../systems/SaveSystem';
 
 type ResultSceneData = Partial<RunResult>;
 
@@ -12,6 +14,11 @@ export class ResultScene extends Phaser.Scene {
     outcome: DEFAULT_OUTCOME,
     score: 0,
     totalLevels: 3,
+  };
+
+  private saveData: SaveData = {
+    bestScore: 0,
+    highestLevel: 1,
   };
 
   constructor() {
@@ -32,6 +39,8 @@ export class ResultScene extends Phaser.Scene {
     const isVictory = this.result.outcome === 'victory';
     const title = isVictory ? 'MISSION COMPLETE' : 'GAME OVER';
     const accentColor = isVictory ? '#facc15' : '#fb7185';
+
+    this.saveData = new SaveSystem().updateFromRun(this.result);
 
     this.add
       .image(width / 2, height / 2, AssetKeys.MenuBackground)
@@ -65,11 +74,20 @@ export class ResultScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.createButton(width / 2, height * 0.59, 'RESTART', () => {
+    this.add
+      .text(width / 2, height * 0.52, this.getRecordText(), {
+        color: '#fef3c7',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '18px',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
+
+    this.createButton(width / 2, height * 0.64, 'RESTART', () => {
       this.scene.start(SceneKeys.Game);
     });
 
-    this.createButton(width / 2, height * 0.7, 'MENU', () => {
+    this.createButton(width / 2, height * 0.75, 'MENU', () => {
       this.scene.start(SceneKeys.MainMenu);
     });
 
@@ -121,5 +139,11 @@ export class ResultScene extends Phaser.Scene {
     }
 
     return `LEVEL ${this.result.currentLevel}/${this.result.totalLevels}`;
+  }
+
+  private getRecordText(): string {
+    return `BEST ${this.saveData.bestScore
+      .toString()
+      .padStart(6, '0')} / LEVEL ${this.saveData.highestLevel}`;
   }
 }
